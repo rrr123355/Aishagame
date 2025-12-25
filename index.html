@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title data-translate="title">Tic Tac Toe - Ultimate Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #e0e5ec;
+            --text-color: #3a3a3a;
+            --primary-accent-color-x: #007bff; 
+            --primary-accent-color-x-dark: #0056b3;
+            --secondary-accent-color-o: #d946ef; 
+            --secondary-accent-color-o-dark: #a21caf;
+            --highlight-color: #ffc107; 
+            --defeat-color: #ef4444;
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+            --disabled-opacity: 0.6;
+            --cell-font-size: clamp(2.5em, 12vw, 3.5em);
+            --status-font-size: clamp(1.2em, 4vw, 1.5em);
+            --button-font-size: clamp(0.9em, 3vw, 1em);
+            --border-radius: 15px;
+            --neu-blur: 15px;
+            --neu-distance: 8px;
+        }
+
+        body.dark-theme {
+            --bg-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --primary-accent-color-x: #3498db;
+            --primary-accent-color-x-dark: #2980b9;
+            --secondary-accent-color-o: #e879f9;
+            --secondary-accent-color-o-dark: #c026d3;
+            --highlight-color: #f1c40f;
+            --defeat-color: #e74c3c;
+            --shadow-light: #3a506b;
+            --shadow-dark: #1c2833;
+        }
+
+        /* Space Theme Specifics */
+        body.space-mode {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --shadow-light: #1e293b;
+            --shadow-dark: #020617;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; width: 100%; overflow: hidden; }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; transition: background-color 0.5s ease, color 0.5s ease; }
+
+        .app-container {
+            width: 100%; height: 100%; max-width: 500px; max-height: 900px;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+            background-color: var(--bg-color);
+            box-shadow: var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+            border-radius: var(--border-radius); overflow-y: auto; position: relative; z-index: 10;
+        }
+        @media (min-width: 501px) { .app-container { max-width: 100%; max-height: 100%; border-radius: 0; } }
+        
+        /* Setup Screen */
+        .game-setup-screen { display: flex; flex-direction: column; align-items: center; justify-content: start; width: 100%; height: 100%; padding: 20px; text-align: center; overflow-y: auto;}
+        .game-setup-screen h2 { font-size: clamp(1.8em, 6vw, 2.5em); margin-bottom: 20px; margin-top: 10px;}
+        
+        .input-group { width: 100%; max-width: 350px; margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 0.9em; font-weight: 600; margin-bottom: 5px; margin-left: 5px;}
+        .neumorphic-input {
+            width: 100%; padding: 12px 15px; border: none; border-radius: var(--border-radius);
+            background-color: var(--bg-color); color: var(--text-color); font-size: 0.95em; outline: none;
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+        }
+
+        .setup-option { margin-bottom: 15px; width: 100%; max-width: 350px; }
+        .setup-option label { display: block; font-size: var(--button-font-size); font-weight: 600; margin-bottom: 8px; }
+        
+        .neumorphic-select-container {
+            position: relative; background-color: var(--bg-color); border-radius: var(--border-radius);
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+        }
+        .neumorphic-select-container select {
+            width: 100%; padding: 12px 15px; font-size: var(--button-font-size); background-color: transparent; border: none; border-radius: var(--border-radius); color: var(--text-color); appearance: none; cursor: pointer;
+        }
+        .neumorphic-select-container::after { 
+            content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: 50%; right: 15px; transform: translateY(-50%); color: var(--text-color); pointer-events: none; 
+        }
+
+        /* Game Content */
+        .game-content { display: none; flex-direction: column; align-items: center; width: 100%; height: 100%; }
+
+        header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px; }
+        header h1 { font-size: clamp(1.2em, 5vw, 1.5em); font-weight: 700; }
+
+        .icon-btn {
+            font-size: clamp(1.2em, 4vw, 1.4em); padding: 10px; cursor: pointer; border-radius: 50%; color: var(--text-color);
+            box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light); transition: all 0.2s;
+        }
+        .icon-btn:active { box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); color: var(--primary-accent-color-x); }
+        .home-icon { margin-right: auto; margin-right: 15px; } 
+
+        .score-board {
+            display: flex; justify-content: space-around; width: 100%; max-width: 380px; margin-bottom: 15px; padding: 10px;
+            background-color: var(--bg-color); border-radius: var(--border-radius);
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+        }
+        .score-item { text-align: center; font-size: 0.8em; font-weight: 600; width: 33%; }
+        .score-item span.name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .score-item span.score { display: block; font-size: 1.2em; font-weight: 700; }
+        #scoreXContainer { color: var(--primary-accent-color-x); }
+        #scoreOContainer { color: var(--secondary-accent-color-o); }
+
+        .status-display {
+            font-size: var(--status-font-size); margin-bottom: 15px; font-weight: 600; padding: 10px 20px;
+            border-radius: var(--border-radius); background-color: var(--bg-color);
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+            text-align: center; min-height: 50px; display: flex; align-items: center; justify-content: center; width: 100%;
+        }
+
+        .timer-display { display: none; width: 100%; max-width: 300px; height: 10px; background: var(--bg-color); border-radius: 10px; margin-bottom: 15px; overflow: hidden; position: relative; box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light); }
+        .timer-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #4ade80, #ef4444); transition: width 1s linear; border-radius: 10px; }
+        .timer-text { font-size: 0.9em; font-weight: bold; margin-bottom: 5px; display: none; }
+
+        .game-board-container { position: relative; margin-bottom: 20px; }
+        .game-board {
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            width: clamp(270px, 85vw, 360px); height: clamp(270px, 85vw, 360px); gap: 10px;
+        }
+
+        .cell {
+            background-color: var(--bg-color); border-radius: var(--border-radius); display: flex; justify-content: center; align-items: center;
+            font-size: var(--cell-font-size); font-weight: 700; cursor: pointer; position: relative;
+            box-shadow: var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+            transition: all 0.3s ease;
+        }
+        .cell:active:not(.disabled) {
+             box-shadow: inset var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), inset calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+        }
+        
+        /* Skin Styles */
+        .cell.x { background: linear-gradient(135deg, var(--primary-accent-color-x-dark), var(--primary-accent-color-x)); color: white; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.3); }
+        .cell.o { background: linear-gradient(135deg, var(--secondary-accent-color-o-dark), var(--secondary-accent-color-o)); color: white; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.3); }
+        .cell.skin-text.x, .cell.skin-text.o { background: var(--bg-color); box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); }
+        .cell.skin-neon.x { background: #000; color: #00f3ff; text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff; border: 2px solid #00f3ff; }
+        .cell.skin-neon.o { background: #000; color: #ff00ff; text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff; border: 2px solid #ff00ff; }
+
+        .winning-line {
+            position: absolute; background-color: var(--highlight-color); height: 8px; border-radius: 4px;
+            transform-origin: left center; z-index: 10; display: none; box-shadow: 0 0 10px var(--highlight-color);
+        }
+
+        .game-controls { display: flex; gap: 15px; margin-top: 10px; }
+        .neumorphic-button {
+            padding: 12px 25px; font-size: var(--button-font-size); font-weight: 600; color: var(--text-color);
+            background-color: var(--bg-color); border: none; border-radius: var(--border-radius); cursor: pointer;
+            box-shadow: var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+            transition: all 0.2s;
+        }
+        .neumorphic-button:active { box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light); }
+        .neumorphic-button.primary { background: linear-gradient(135deg, var(--primary-accent-color-x-dark), var(--primary-accent-color-x)); color: white; }
+
+        /* Side Menu */
+        .side-menu {
+            position: fixed; top: 0; right: -320px; width: 280px; height: 100%; background-color: var(--bg-color);
+            box-shadow: -5px 0 15px rgba(0,0,0,0.2); padding: 20px; transition: right 0.3s ease; z-index: 1000;
+            display: flex; flex-direction: column; overflow-y: auto;
+        }
+        .side-menu.open { right: 0; }
+        .close-menu-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; color: var(--text-color); cursor: pointer; }
+        .side-menu ul { list-style: none; margin-top: 40px; }
+        .side-menu li { margin-bottom: 25px; }
+        .toggle-switch { display: flex; border-radius: var(--border-radius); overflow: hidden; box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); }
+        .toggle-switch button { flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-color); cursor: pointer; font-size: 0.85em; }
+        .toggle-switch button.active { background-color: var(--primary-accent-color-x); color: white; }
+        
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; }
+        .overlay.active { display: block; }
+
+        /* Winner Modal */
+        .winner-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
+            background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); z-index: 3000; opacity: 0; visibility: hidden; transition: all 0.3s;
+        }
+        .winner-modal.show { opacity: 1; visibility: visible; }
+        .winner-content {
+            background-color: var(--bg-color); padding: 40px; border-radius: 30px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); transform: scale(0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); width: 90%; max-width: 400px;
+        }
+        .winner-modal.show .winner-content { transform: scale(1); }
+        .winner-icon { font-size: 4em; margin: 20px 0; }
+        .winner-text { font-size: 1.8em; font-weight: 800; margin-bottom: 20px; background: linear-gradient(45deg, var(--primary-accent-color-x), var(--secondary-accent-color-o)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* --- WEATHER & ANIMATIONS --- */
+        .weather-particle { position: fixed; pointer-events: none; z-index: 99999; will-change: transform, top, opacity; }
+        
+        .snowflake {
+            top: -30px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 5px rgba(255,255,255,0.8);
+            animation-name: fall, sway; animation-timing-function: linear, ease-in-out; animation-iteration-count: infinite, infinite;
+        }
+        @keyframes fall { to { top: 110vh; } }
+        @keyframes sway { 0% { transform: translateX(-20px) rotate(0deg); } 100% { transform: translateX(20px) rotate(100deg); } }
+
+        .raindrop {
+            top: -50px; width: 2px; height: 15px; background: linear-gradient(to bottom, rgba(255,255,255,0), #60a5fa);
+            animation: rainFall linear infinite;
+        }
+        @keyframes rainFall { to { top: 110vh; } }
+
+        .star {
+            background: white; border-radius: 50%; opacity: 0;
+            animation: twinkle ease-in-out infinite;
+        }
+        @keyframes twinkle { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px white; } }
+
+        .firework {
+            position: absolute; width: 5px; height: 5px; border-radius: 50%;
+            animation: explode 1s ease-out forwards; pointer-events: none; z-index: 2000;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body class="light-theme"> 
+
+    <div class="app-container">
+        
+        <!-- SETUP SCREEN -->
+        <div class="game-setup-screen" id="gameSetupScreen">
+            <h2 data-translate="setupGame">Setup Game</h2>
+            
+            <div class="input-group">
+                <label data-translate="p1Name">Player X Name</label>
+                <input type="text" id="playerXName" class="neumorphic-input" placeholder="Enter Name (e.g. Rahim)">
+            </div>
+            <div class="input-group">
+                <label data-translate="p2Name">Player O Name</label>
+                <input type="text" id="playerOName" class="neumorphic-input" placeholder="Enter Name (or AI)">
+            </div>
+
+            <div class="setup-option">
+                <label data-translate="skin">Board Skin</label>
+                <div class="neumorphic-select-container">
+                    <select id="skinSelect">
+                        <option value="classic">Classic (X / O)</option>
+                        <option value="emoji">Emoji (😜 / 😈)</option>
+                        <option value="love">Love (❤️ / 💙)</option>
+                        <option value="neon">Neon (Glowing)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setup-option">
+                <label data-translate="season">Environment</label>
+                <div class="neumorphic-select-container">
+                    <select id="seasonSelect">
+                        <option value="snow">Winter (Snow)</option>
+                        <option value="rain">Monsoon (Rain)</option>
+                        <option value="space">Space (Stars)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="setup-option">
+                <label data-translate="gameMode">Game Mode</label>
+                <div class="neumorphic-select-container">
+                    <select id="gameModeSelect">
+                        <option value="pvp" data-translate="pvp">Player vs Player</option>
+                        <option value="pve" data-translate="pve">Player vs AI</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setup-option">
+                <label data-translate="gameType">Game Type</label>
+                <div class="neumorphic-select-container">
+                    <select id="gameTypeSelect">
+                        <option value="normal" data-translate="normal">Normal (No Timer)</option>
+                        <option value="timed" data-translate="timed">Timed Mode</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setup-option" id="timeSelectionContainer" style="display: none;">
+                <label data-translate="timePerTurn">Time Per Turn</label>
+                <div class="neumorphic-select-container">
+                    <select id="timeLimitSelect">
+                        <option value="5">5 Seconds</option>
+                        <option value="10" selected>10 Seconds</option>
+                        <option value="15">15 Seconds</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- AI DIFFICULTY SELECTOR (UPDATED) -->
+            <div class="setup-option" id="aiDifficultyContainer" style="display: none;">
+                <label data-translate="aiDifficulty">AI Difficulty</label>
+                <div class="neumorphic-select-container">
+                    <select id="aiDifficultySelect">
+                        <option value="easy">Easy (Low)</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard (High)</option>
+                        <option value="impossible">Impossible (Very High)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="neumorphic-button primary" id="startGameButton" style="width: 100%; max-width: 350px; margin-top: 10px;" data-translate="startGame">Start Game</button>
+        </div>
+
+        <!-- GAME CONTENT -->
+        <div class="game-content" id="gameContent">
+            <header>
+                <div class="icon-btn home-icon" id="homeButton"><i class="fas fa-home"></i></div>
+                <h1 id="headerTitle">Tic Tac Toe</h1>
+                <div class="icon-btn" id="hamburgerIcon"><i class="fas fa-bars"></i></div>
+            </header>
+
+            <main style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <div class="score-board">
+                    <div class="score-item" id="scoreXContainer">
+                        <span class="name" id="displayXName">Player X</span>
+                        <span class="score" id="scoreX">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="name" data-translate="draws">Draws</span>
+                        <span class="score" id="scoreDraw">0</span>
+                    </div>
+                    <div class="score-item" id="scoreOContainer">
+                        <span class="name" id="displayOName">Player O</span>
+                        <span class="score" id="scoreO">0</span>
+                    </div>
+                </div>
+
+                <div class="status-display" id="statusDisplay"></div>
+                <div class="timer-text" id="timerText"><span data-translate="timeLeft">Time Left:</span> <span id="timeCount">10</span>s</div>
+                <div class="timer-display" id="timerDisplay"><div class="timer-bar" id="timerBar"></div></div>
+                
+                <div class="game-board-container">
+                    <div class="game-board" id="gameBoard"></div>
+                    <div class="winning-line" id="winningLine"></div>
+                </div>
+                
+                <div class="game-controls">
+                    <button class="neumorphic-button" id="resetButton" data-translate="resetGame">Reset Board</button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- WINNER MODAL -->
+    <div id="winnerModal" class="winner-modal">
+        <div class="winner-content">
+            <div class="winner-icon" id="winnerIcon">🏆</div>
+            <div class="winner-text" id="winnerText"></div>
+            <button class="neumorphic-button primary" id="playAgainBtn" data-translate="newGame">Play Again</button>
+            <button class="neumorphic-button" id="modalHomeBtn" style="margin-top: 10px;" data-translate="home">Home</button>
+        </div>
+    </div>
+
+    <!-- SIDE MENU -->
+    <nav class="side-menu" id="sideMenu">
+        <button class="close-menu-btn" id="closeMenuBtn"><i class="fas fa-times"></i></button>
+        <ul>
+            <li>
+                <span data-translate="language">Language</span>
+                <div class="toggle-switch">
+                    <button id="langEn" data-lang="en">EN</button>
+                    <button id="langHi" data-lang="hi">HI</button>
+                    <button id="langBn" data-lang="bn">BN</button>
+                </div>
+            </li>
+            <li>
+                <span data-translate="sound">Sound FX</span>
+                <div class="toggle-switch">
+                    <button id="soundOn">On</button>
+                    <button id="soundOff">Off</button>
+                </div>
+            </li>
+             <li>
+                <span data-translate="music">Music</span>
+                <div class="toggle-switch">
+                    <button id="musicOn">On</button>
+                    <button id="musicOff">Off</button>
+                </div>
+            </li>
+             <li>
+                <span data-translate="voice">Voice</span>
+                <div class="toggle-switch">
+                    <button id="voiceOn">On</button>
+                    <button id="voiceOff">Off</button>
+                </div>
+            </li>
+            <li><hr style="border: 1px solid var(--shadow-dark); margin: 15px 0; opacity: 0.5;"></li>
+            <li>
+                <button class="neumorphic-button" id="resetScoresButton" style="width:100%;" data-translate="resetScores">Reset Stats</button>
+            </li>
+        </ul>
+    </nav>
+    <div class="overlay" id="overlay"></div>
+
+    <script>
+        const translations = {
+            en: {
+                title: "Tic Tac Toe Pro", setupGame: "Setup Your Game", p1Name: "Player X Name", p2Name: "Player O Name",
+                skin: "Board Theme", season: "Environment", gameMode: "Game Mode", gameType: "Game Type",
+                normal: "Normal", timed: "Timed", timePerTurn: "Time Per Turn", pvp: "Player vs Player", pve: "Player vs AI",
+                aiDifficulty: "AI Level", startGame: "Start Game", draws: "Draws", timeLeft: "Time Left:",
+                resetGame: "Reset Board", newGame: "Play Again", home: "Home", language: "Language",
+                sound: "Sound", music: "Music", voice: "Voice", resetScores: "Reset Scores",
+                aiThinking: "AI is thinking...", wins: " Wins!", draw: "It's a Draw!", timeUp: "Time's Up!"
+            },
+            hi: {
+                title: "टिक टैक टो प्रो", setupGame: "गेम सेटअप", p1Name: "खिलाड़ी X का नाम", p2Name: "खिलाड़ी O का नाम",
+                skin: "थीम चुनें", season: "मौसम", gameMode: "मोड", gameType: "प्रकार",
+                normal: "सामान्य", timed: "समयबद्ध", timePerTurn: "समय", pvp: "बनाम खिलाड़ी", pve: "बनाम AI",
+                aiDifficulty: "AI स्तर", startGame: "शुरू करें", draws: "ड्रॉ", timeLeft: "समय:",
+                resetGame: "रीसेट", newGame: "पुनः खेलें", home: "होम", language: "भाषा",
+                sound: "ध्वनि", music: "संगीत", voice: "आवाज़", resetScores: "स्कोर हटाएं",
+                aiThinking: "AI सोच रहा है...", wins: " जीत गया!", draw: "ड्रॉ हो गया!", timeUp: "समय समाप्त!"
+            },
+            bn: {
+                title: "টিক ট্যাক টো প্রো", setupGame: "গেম সেটআপ", p1Name: "খেলোয়াড় X এর নাম", p2Name: "খেলোয়াড় O এর নাম",
+                skin: "থিম", season: "পরিবেশ", gameMode: "মোড", gameType: "ধরণ",
+                normal: "সাধারণ", timed: "টাইমড", timePerTurn: "সময়", pvp: "বনাম প্লেয়ার", pve: "বনাম AI",
+                aiDifficulty: "AI লেভেল", startGame: "শুরু করুন", draws: "ড্র", timeLeft: "সময় বাকি:",
+                resetGame: "রিসেট", newGame: "আবার খেলুন", home: "হোম", language: "भाषा",
+                sound: "সাউন্ড", music: "মিউজিক", voice: "ভয়েস", resetScores: "স্কোর মুছুন",
+                aiThinking: "AI ভাবছে...", wins: " জিতেছে!", draw: "ড্র হয়েছে!", timeUp: "সময় শেষ!"
+            }
+        };
+
+        const skins = {
+            classic: { x: 'X', o: 'O', class: '' },
+            emoji: { x: '😜', o: '😈', class: 'skin-text' },
+            love: { x: '❤️', o: '💙', class: 'skin-text' },
+            neon: { x: 'X', o: 'O', class: 'skin-neon' }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let gameActive = true;
+            let boardState = Array(9).fill("");
+            let currentPlayer = "X";
+            let gameMode = 'pvp'; 
+            let gameType = 'normal'; 
+            let turnTimeLimit = 10;
+            let timerInterval, timeLeft, musicInterval;
+            let aiDifficulty = 'hard';
+            let scores = JSON.parse(localStorage.getItem('ttt_scores')) || { X: 0, O: 0, Draw: 0 };
+            let currentLang = 'en';
+            let soundEnabled = true, musicEnabled = false, voiceEnabled = true;
+            let humanPlayer = 'X', aiPlayer = 'O';
+            let p1Name = "Player X", p2Name = "Player O";
+            let currentSkin = 'classic';
+            let currentSeason = 'snow';
+
+            let audioCtx = null;
+            function initAudio() {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }
+
+            function playMusic() {
+                if (!musicEnabled || !audioCtx) return;
+                stopMusic();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                osc.start();
+                musicInterval = { osc, gain };
+            }
+            function stopMusic() {
+                if (musicInterval) { musicInterval.osc.stop(); musicInterval = null; }
+            }
+
+            let weatherInterval;
+            function setWeather(type) {
+                if (weatherInterval) clearInterval(weatherInterval);
+                document.querySelectorAll('.weather-particle').forEach(p => p.remove());
+                document.body.classList.remove('space-mode');
+
+                if (type === 'snow') {
+                    weatherInterval = setInterval(() => createParticle('snowflake'), 400); 
+                } else if (type === 'rain') {
+                    weatherInterval = setInterval(() => createParticle('raindrop'), 50); 
+                } else if (type === 'space') {
+                    document.body.classList.add('space-mode');
+                    for(let i=0; i<50; i++) createParticle('star', true); 
+                }
+            }
+
+            function createParticle(type, isStatic = false) {
+                const p = document.createElement('div');
+                p.classList.add('weather-particle', type);
+                p.style.left = Math.random() * 100 + 'vw';
+                
+                if (type === 'snowflake') {
+                    const size = Math.random() * 10 + 4 + 'px';
+                    p.style.width = size; p.style.height = size; p.style.opacity = Math.random() * 0.5 + 0.3;
+                    const fall = Math.random() * 7 + 5 + 's';
+                    const sway = Math.random() * 2 + 2 + 's';
+                    p.style.animationDuration = `${fall}, ${sway}`;
+                    setTimeout(() => p.remove(), parseFloat(fall) * 1000);
+                } else if (type === 'raindrop') {
+                     p.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                     setTimeout(() => p.remove(), 1000);
+                } else if (type === 'star') {
+                    const size = Math.random() * 3 + 1 + 'px';
+                    p.style.width = size; p.style.height = size;
+                    p.style.top = Math.random() * 100 + 'vh';
+                    p.style.animationDuration = (Math.random() * 3 + 1) + 's';
+                    return document.body.appendChild(p);
+                }
+                document.body.appendChild(p);
+            }
+
+            document.getElementById('startGameButton').addEventListener('click', () => {
+                initAudio();
+                playSound('back');
+                if (musicEnabled) playMusic();
+
+                p1Name = document.getElementById('playerXName').value || "Player X";
+                p2Name = document.getElementById('playerOName').value || (document.getElementById('gameModeSelect').value === 'pve' ? "AI Bot" : "Player O");
+                currentSkin = document.getElementById('skinSelect').value;
+                currentSeason = document.getElementById('seasonSelect').value;
+                gameMode = document.getElementById('gameModeSelect').value;
+                gameType = document.getElementById('gameTypeSelect').value;
+                turnTimeLimit = parseInt(document.getElementById('timeLimitSelect').value);
+                aiDifficulty = document.getElementById('aiDifficultySelect').value;
+
+                document.getElementById('gameSetupScreen').style.display = 'none';
+                document.getElementById('gameContent').style.display = 'flex';
+                document.getElementById('displayXName').textContent = p1Name;
+                document.getElementById('displayOName').textContent = p2Name;
+                document.getElementById('timerDisplay').style.display = gameType === 'timed' ? 'block' : 'none';
+                document.getElementById('timerText').style.display = gameType === 'timed' ? 'block' : 'none';
+
+                setWeather(currentSeason);
+                startNewGame();
+            });
+
+            function startNewGame() {
+                boardState.fill("");
+                gameActive = true;
+                currentPlayer = "X";
+                createBoard();
+                document.getElementById('winningLine').style.display = 'none';
+                document.getElementById('winnerModal').classList.remove('show');
+                updateStatus();
+                updateScores();
+                if (gameType === 'timed') startTimer();
+                if (gameMode === 'pve') { humanPlayer = 'X'; aiPlayer = 'O'; }
+            }
+
+            function createBoard() {
+                const board = document.getElementById('gameBoard');
+                board.innerHTML = '';
+                boardState.forEach((_, i) => {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.index = i;
+                    cell.addEventListener('click', handleCellClick);
+                    board.appendChild(cell);
+                });
+            }
+
+            function handleCellClick(e) {
+                const idx = e.target.dataset.index;
+                if (boardState[idx] !== "" || !gameActive) return;
+                if (gameMode === 'pve' && currentPlayer === aiPlayer) return;
+                makeMove(idx, currentPlayer);
+            }
+
+            function makeMove(index, player) {
+                boardState[index] = player;
+                const cell = document.getElementById('gameBoard').children[index];
+                
+                const skinData = skins[currentSkin];
+                cell.textContent = player === 'X' ? skinData.x : skinData.o;
+                cell.classList.add(player.toLowerCase());
+                if (skinData.class) cell.classList.add(skinData.class);
+
+                playSound('click');
+
+                if (checkWin(player)) {
+                    endGame(player);
+                } else if (!boardState.includes("")) {
+                    endGame('Draw');
+                } else {
+                    currentPlayer = currentPlayer === "X" ? "O" : "X";
+                    updateStatus();
+                    if (gameType === 'timed') startTimer();
+                    if (gameMode === 'pve' && currentPlayer === aiPlayer && gameActive) {
+                        updateStatus(true);
+                        setTimeout(aiMove, 600);
+                    }
+                }
+            }
+
+            function updateStatus(thinking = false) {
+                const status = document.getElementById('statusDisplay');
+                if (thinking) {
+                    status.innerHTML = `${translations[currentLang].aiThinking} <i class="fas fa-spinner fa-spin"></i>`;
+                } else {
+                    const name = currentPlayer === 'X' ? p1Name : p2Name;
+                    const color = currentPlayer === 'X' ? 'var(--primary-accent-color-x)' : 'var(--secondary-accent-color-o)';
+                    status.innerHTML = `<span style="color:${color}">${name}</span>'s Turn`;
+                }
+            }
+
+            function endGame(winner) {
+                gameActive = false;
+                clearInterval(timerInterval);
+                let msg = "";
+
+                // Determine message
+                if (winner === 'Draw') {
+                    scores.Draw++;
+                    msg = translations[currentLang].draw;
+                } else {
+                    scores[winner]++;
+                    const winnerName = winner === 'X' ? p1Name : p2Name;
+                    msg = winnerName + translations[currentLang].wins;
+                }
+
+                if(voiceEnabled) speak(msg);
+
+                // Sounds & Effects
+                if (winner === 'Draw') {
+                    playSound('draw');
+                } else {
+                    playSound(winner === aiPlayer && gameMode === 'pve' ? 'lose' : 'win');
+                    if (gameMode !== 'pve' || winner !== aiPlayer) triggerFireworks();
+                }
+                
+                localStorage.setItem('ttt_scores', JSON.stringify(scores));
+                updateScores();
+                showWinnerModal(msg, winner);
+            }
+
+            function triggerFireworks() {
+                for(let i=0; i<15; i++) {
+                    setTimeout(() => {
+                        const fw = document.createElement('div');
+                        fw.classList.add('firework');
+                        fw.style.left = (Math.random() * 80 + 10) + '%';
+                        fw.style.top = (Math.random() * 60 + 20) + '%';
+                        fw.style.backgroundColor = `hsl(${Math.random()*360}, 100%, 50%)`;
+                        fw.style.setProperty('--x', (Math.random()*200 - 100) + 'px');
+                        fw.style.setProperty('--y', (Math.random()*200 - 100) + 'px');
+                        document.body.appendChild(fw);
+                        setTimeout(() => fw.remove(), 1000);
+                    }, i * 100);
+                }
+            }
+
+            function speak(text) {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); 
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 1.1; 
+                    utterance.pitch = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                }
+            }
+
+            function aiMove() {
+                if (!gameActive) return;
+                let idx;
+                
+                if (aiDifficulty === 'easy') {
+                    idx = getRandomMove();
+                } 
+                else if (aiDifficulty === 'medium') {
+                    idx = Math.random() < 0.4 ? getRandomMove() : getBestMove();
+                } 
+                else if (aiDifficulty === 'hard') {
+                     idx = Math.random() < 0.1 ? getRandomMove() : getBestMove();
+                }
+                else {
+                    idx = getBestMove();
+                }
+
+                if (idx !== -1) makeMove(idx, aiPlayer);
+            }
+
+            function getRandomMove() {
+                let avail = boardState.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+                return avail[Math.floor(Math.random() * avail.length)];
+            }
+            function getBestMove() {
+                return minimax(boardState, aiPlayer).index;
+            }
+            function minimax(newBoard, player) {
+                let avail = newBoard.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+                if (checkWinState(newBoard, humanPlayer)) return { score: -10 };
+                if (checkWinState(newBoard, aiPlayer)) return { score: 10 };
+                if (avail.length === 0) return { score: 0 };
+                let moves = [];
+                for (let i of avail) {
+                    let move = {}; move.index = i; newBoard[i] = player;
+                    move.score = minimax(newBoard, player === aiPlayer ? humanPlayer : aiPlayer).score;
+                    newBoard[i] = ""; moves.push(move);
+                }
+                return moves.reduce((best, m) => (player === aiPlayer ? (m.score > best.score ? m : best) : (m.score < best.score ? m : best)));
+            }
+            function checkWinState(b, p) {
+                const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                return wins.some(c => b[c[0]] === p && b[c[1]] === p && b[c[2]] === p);
+            }
+            function checkWin(p) {
+                const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                return wins.some(c => {
+                    if (c.every(i => boardState[i] === p)) {
+                        drawWinLine(c); return true;
+                    } return false;
+                });
+            }
+            function drawWinLine(combo) {
+                const line = document.getElementById('winningLine');
+                const cells = document.getElementById('gameBoard').children;
+                const r1 = cells[combo[0]].getBoundingClientRect();
+                const r2 = cells[combo[2]].getBoundingClientRect();
+                const br = document.getElementById('gameBoard').getBoundingClientRect();
+                const x1 = r1.left+r1.width/2-br.left, y1 = r1.top+r1.height/2-br.top;
+                const x2 = r2.left+r2.width/2-br.left, y2 = r2.top+r2.height/2-br.top;
+                const len = Math.hypot(x2-x1, y2-y1), ang = Math.atan2(y2-y1, x2-x1)*180/Math.PI;
+                line.style.width=`${len}px`; line.style.transform=`translate(${x1}px,${y1}px) rotate(${ang}deg)`;
+                line.style.display='block';
+            }
+
+            function startTimer() {
+                clearInterval(timerInterval);
+                timeLeft = turnTimeLimit;
+                updateTimerUI();
+                timerInterval = setInterval(() => {
+                    timeLeft--; updateTimerUI();
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        const winner = currentPlayer==='X'?'O':'X';
+                        const winnerName = winner === 'X' ? p1Name : p2Name;
+                        if(gameMode === 'pve' && currentPlayer === humanPlayer) playSound('lose'); else playSound('win');
+                        scores[winner]++; updateScores();
+                        
+                        const msg = translations[currentLang].timeUp;
+                        if(voiceEnabled) speak(msg);
+                        
+                        showWinnerModal(msg, winner);
+                    }
+                }, 1000);
+            }
+            function updateTimerUI() {
+                document.getElementById('timeCount').textContent = timeLeft;
+                document.getElementById('timerBar').style.width = (timeLeft/turnTimeLimit)*100+'%';
+            }
+
+            function updateScores() {
+                document.getElementById('scoreX').textContent = scores.X;
+                document.getElementById('scoreO').textContent = scores.O;
+                document.getElementById('scoreDraw').textContent = scores.Draw;
+            }
+            function showWinnerModal(text, winner) {
+                document.getElementById('winnerModal').classList.add('show');
+                document.getElementById('winnerText').textContent = text;
+                document.getElementById('winnerIcon').textContent = winner === 'Draw' ? '🤝' : (currentSkin === 'emoji' ? (winner === 'X' ? '😜' : '😈') : '🏆');
+            }
+            function goHome() {
+                stopMusic();
+                setWeather('snow'); 
+                document.getElementById('gameContent').style.display = 'none';
+                document.getElementById('gameSetupScreen').style.display = 'flex';
+                document.getElementById('sideMenu').classList.remove('open');
+                document.getElementById('overlay').classList.remove('active');
+            }
+
+            function playSound(type) {
+                if (!soundEnabled || !audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+                if (type==='click') {
+                    osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.1);
+                    osc.start(now); osc.stop(now+0.1);
+                } else if (type==='win') {
+                    osc.type='triangle'; osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now+0.15); osc.frequency.setValueAtTime(783, now+0.3);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now+1);
+                    osc.start(now); osc.stop(now+1);
+                } else if (type==='lose') {
+                    osc.type='sawtooth'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now+0.5);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.5);
+                    osc.start(now); osc.stop(now+0.5);
+                } else if (type==='draw') {
+                     osc.type='square'; osc.frequency.setValueAtTime(300, now); gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+                     osc.start(now); osc.stop(now+0.3);
+                } else if (type==='back') {
+                     osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(50, now+0.2);
+                     gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.2);
+                     osc.start(now); osc.stop(now+0.2);
+                }
+            }
+
+            document.getElementById('resetButton').addEventListener('click', () => { playSound('back'); startNewGame(); });
+            document.getElementById('playAgainBtn').addEventListener('click', () => { playSound('click'); startNewGame(); });
+            document.getElementById('homeButton').addEventListener('click', goHome);
+            document.getElementById('modalHomeBtn').addEventListener('click', () => { document.getElementById('winnerModal').classList.remove('show'); goHome(); });
+            
+            document.getElementById('hamburgerIcon').addEventListener('click', () => { document.getElementById('sideMenu').classList.add('open'); document.getElementById('overlay').classList.add('active'); });
+            document.getElementById('closeMenuBtn').addEventListener('click', () => { document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); });
+            document.getElementById('overlay').addEventListener('click', () => { document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); });
+
+            const setLang = (l) => {
+                currentLang = l;
+                document.querySelectorAll('[data-translate]').forEach(el => el.textContent = translations[l][el.dataset.translate] || el.dataset.translate);
+                ['En','Hi','Bn'].forEach(lang => document.getElementById('lang'+lang).classList.toggle('active', l===lang.toLowerCase()));
+            };
+            document.getElementById('langEn').addEventListener('click', () => setLang('en'));
+            document.getElementById('langHi').addEventListener('click', () => setLang('hi'));
+            document.getElementById('langBn').addEventListener('click', () => setLang('bn'));
+            
+            const updateToggle = (id, state) => {
+                document.getElementById(id+'On').classList.toggle('active', state);
+                document.getElementById(id+'Off').classList.toggle('active', !state);
+            };
+            document.getElementById('soundOn').addEventListener('click', () => { soundEnabled=true; updateToggle('sound', true); });
+            document.getElementById('soundOff').addEventListener('click', () => { soundEnabled=false; updateToggle('sound', false); });
+            
+            document.getElementById('musicOn').addEventListener('click', () => { musicEnabled=true; updateToggle('music', true); if(gameActive && document.getElementById('gameContent').style.display==='flex') playMusic(); });
+            document.getElementById('musicOff').addEventListener('click', () => { musicEnabled=false; updateToggle('music', false); stopMusic(); });
+
+            document.getElementById('voiceOn').addEventListener('click', () => { voiceEnabled=true; updateToggle('voice', true); });
+            document.getElementById('voiceOff').addEventListener('click', () => { voiceEnabled=false; updateToggle('voice', false); });
+
+            document.getElementById('resetScoresButton').addEventListener('click', () => {
+                scores = { X: 0, O: 0, Draw: 0 }; localStorage.setItem('ttt_scores', JSON.stringify(scores)); updateScores(); playSound('back');
+            });
+            
+            // --- FIX FOR AI VISIBILITY BUG ---
+            const aiContainer = document.getElementById('aiDifficultyContainer');
+            const modeSelect = document.getElementById('gameModeSelect');
+
+            function toggleAI() {
+                aiContainer.style.display = modeSelect.value === 'pve' ? 'block' : 'none';
+            }
+
+            // Call immediately on load to handle browser autofill
+            toggleAI();
+
+            // Also attach listener for changes
+            modeSelect.addEventListener('change', toggleAI);
+            // ------------------------------------
+
+            setLang('en');
+            updateToggle('sound', true); updateToggle('music', false); updateToggle('voice', true);
+            updateScores();
+            setWeather('snow'); 
+        });
+    </script>
+</body>
+</html>
