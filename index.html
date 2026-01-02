@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title data-translate="title">Tic Tac Toe - Ultimate</title>
+    
+    <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/fscreen%401.0.1.js"></script>
+    <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/Stage%400.1.4.js"></script>
+    <script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/MyMath.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
             --bg-color: #e0e5ec;
@@ -179,50 +185,33 @@
         .winner-text { font-size: 1.8em; font-weight: 800; margin-bottom: 20px; background: linear-gradient(45deg, var(--primary-accent-color-x), var(--secondary-accent-color-o)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .winner-text.lose { background: linear-gradient(45deg, var(--defeat-color), #7f1d1d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        .confetti { position: absolute; width: 10px; height: 10px; background: red; animation: fall 3s linear forwards; pointer-events: none; z-index: 2000; }
-        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
-
-        /* --- REALISTIC FLOATING SNOW CSS --- */
-        .snowflake {
+        /* --- FIREWORKS OVERLAY CSS (FIXED FOR FULL SCREEN) --- */
+        #fireworks-overlay {
             position: fixed;
-            top: -30px;
-            background: #ffffff;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 99999; /* Always on top */
-            box-shadow: 0 0 5px rgba(0,0,0,0.2);
-            will-change: transform, top; /* Optimizes animation performance */
-            /* Animation Names: fall (vertical), sway (horizontal) */
-            animation-name: fall, sway;
-            animation-timing-function: linear, ease-in-out;
-            animation-iteration-count: infinite, infinite;
-            animation-direction: normal, alternate; /* Alternate makes it zig-zag */
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; /* Allows click through */
+            z-index: 9998; /* Under snow but over content */
         }
+        .canvas-container { width: 100%; height: 100%; position: absolute; top:0; left:0; }
+        .canvas-container canvas { position: absolute; width: 100%; height: 100%; top:0; left:0; }
 
-        /* 1. Falling Down Animation */
-        @keyframes fall {
-            to {
-                top: 110vh;
-            }
-        }
-
-        /* 2. Swaying (Wind) Animation */
-        @keyframes sway {
-            0% {
-                transform: translateX(-20px) rotate(0deg);
-            }
-            100% {
-                transform: translateX(20px) rotate(100deg);
-            }
-        }
-
+        /* Floating Snow */
+        .snowflake { position: fixed; top: -30px; background: #ffffff; border-radius: 50%; pointer-events: none; z-index: 99999; box-shadow: 0 0 5px rgba(0,0,0,0.2); animation-name: fall, sway; animation-timing-function: linear, ease-in-out; animation-iteration-count: infinite, infinite; animation-direction: normal, alternate; }
+        @keyframes fall { to { top: 110vh; } }
+        @keyframes sway { 0% { transform: translateX(-20px) rotate(0deg); } 100% { transform: translateX(20px) rotate(100deg); } }
     </style>
 </head>
 <body class="light-theme"> 
 
+    <div id="fireworks-overlay">
+        <div class="canvas-container">
+            <canvas id="trails-canvas"></canvas>
+            <canvas id="main-canvas"></canvas>
+        </div>
+    </div>
+
     <div class="app-container">
         
-        <!-- SETUP SCREEN -->
         <div class="game-setup-screen" id="gameSetupScreen">
             <h2 data-translate="setupGame">Setup Game</h2>
             
@@ -282,7 +271,6 @@
             <button class="neumorphic-button primary" id="startGameButton" data-translate="startGame">Start Game</button>
         </div>
 
-        <!-- GAME CONTENT -->
         <div class="game-content" id="gameContent">
             <header>
                 <div class="icon-btn home-icon" id="homeButton" aria-label="Home">
@@ -328,7 +316,6 @@
         </div>
     </div>
 
-    <!-- WINNER MODAL -->
     <div id="winnerModal" class="winner-modal">
         <div class="winner-content">
             <div class="winner-icon" id="winnerIcon">🏆</div>
@@ -338,7 +325,6 @@
         </div>
     </div>
 
-    <!-- SIDE MENU -->
     <nav class="side-menu" id="sideMenu">
         <button class="close-menu-btn" id="closeMenuBtn"><i class="fas fa-times"></i></button>
         <ul>
@@ -358,10 +344,17 @@
                 </div>
             </li>
             <li>
-                <span data-translate="sound">Sound</span>
+                <span data-translate="sound">Game Sound</span>
                 <div class="toggle-switch">
                     <button id="soundOn" data-sound="on" data-translate="on">On</button>
                     <button id="soundOff" data-sound="off" data-translate="off">Off</button>
+                </div>
+            </li>
+            <li>
+                <span data-translate="fireworks">Fireworks Sound</span>
+                <div class="toggle-switch">
+                    <button id="fwSoundOn" class="active" data-translate="on">On</button>
+                    <button id="fwSoundOff" data-translate="off">Off</button>
                 </div>
             </li>
             <li><hr style="border: 1px solid var(--shadow-dark); margin: 15px 0; opacity: 0.5;"></li>
@@ -374,145 +367,201 @@
 
     <script>
         const translations = {
-            en: {
-                title: "Tic Tac Toe",
-                setupGame: "Setup Your Game",
-                gameMode: "Game Mode",
-                gameType: "Game Type",
-                normal: "Normal (No Timer)",
-                timed: "Timed Mode",
-                timePerTurn: "Time Per Turn",
-                pvp: "Player vs Player",
-                pve: "Player vs AI",
-                aiDifficulty: "AI Difficulty",
-                easy: "Easy",
-                medium: "Medium",
-                hard: "Hard (Minimax)",
-                firstPlayer: "First Player",
-                random: "Random",
-                startGame: "Start Game",
-                currentPlayer: "Current Player: ",
-                playerX: "Player X",
-                playerO: "Player O",
-                draws: "Draws",
-                resetGame: "Reset Board",
-                newGame: "Play Again",
-                home: "Home",
-                language: "Language",
-                theme: "Theme",
-                light: "Light",
-                dark: "Dark",
-                sound: "Sound",
-                on: "On",
-                off: "Off",
-                resetScores: "Reset Scores",
-                playerXWins: "Player X Wins!",
-                playerOWins: "Player O Wins!",
-                aiWins: "AI Wins!",
-                youWin: "You Win!",
-                draw: "It's a Draw!",
-                timeUp: "Time's Up!",
-                aiThinking: "AI is thinking...",
-                timeLeft: "Time Left:",
-                "5sec": "5 Seconds",
-                "10sec": "10 Seconds",
-                "15sec": "15 Seconds",
-                "30sec": "30 Seconds"
+            en: { title: "Tic Tac Toe", setupGame: "Setup Your Game", gameMode: "Game Mode", gameType: "Game Type", normal: "Normal (No Timer)", timed: "Timed Mode", timePerTurn: "Time Per Turn", pvp: "Player vs Player", pve: "Player vs AI", aiDifficulty: "AI Difficulty", easy: "Easy", medium: "Medium", hard: "Hard (Minimax)", firstPlayer: "First Player", random: "Random", startGame: "Start Game", currentPlayer: "Current Player: ", playerX: "Player X", playerO: "Player O", draws: "Draws", resetGame: "Reset Board", newGame: "Play Again", home: "Home", language: "Language", theme: "Theme", light: "Light", dark: "Dark", sound: "Game Sound", fireworks: "Fireworks Sound", on: "On", off: "Off", resetScores: "Reset Scores", playerXWins: "Player X Wins!", playerOWins: "Player O Wins!", aiWins: "AI Wins!", youWin: "You Win!", draw: "It's a Draw!", timeUp: "Time's Up!", aiThinking: "AI is thinking...", timeLeft: "Time Left:", "5sec": "5 Seconds", "10sec": "10 Seconds", "15sec": "15 Seconds", "30sec": "30 Seconds" },
+            hi: { title: "टिक टैक टो", setupGame: "गेम सेटअप करें", gameMode: "गेम मोड", gameType: "गेम का प्रकार", normal: "सामान्य (समय नहीं)", timed: "समयबद्ध (Timed)", timePerTurn: "प्रति चाल समय", pvp: "खिलाड़ी बनाम खिलाड़ी", pve: "खिलाड़ी बनाम AI", aiDifficulty: "AI स्तर", easy: "आसान", medium: "मध्यम", hard: "कठिन", firstPlayer: "पहला खिलाड़ी", random: "रैंडम", startGame: "खेल शुरू करें", currentPlayer: "वर्तमान खिलाड़ी: ", playerX: "खिलाड़ी X", playerO: "खिलाड़ी O", draws: "ड्रॉ", resetGame: "बोर्ड रीसेट करें", newGame: "फिर से खेलें", home: "होम", language: "भाषा", theme: "थीम", light: "लाइट", dark: "डार्क", sound: "खेल ध्वनि", fireworks: "रॉकेट ध्वनि", on: "चालू", off: "बंद", resetScores: "स्कोर रीसेट करें", playerXWins: "खिलाड़ी X जीत गया!", playerOWins: "खिलाड़ी O जीत गया!", aiWins: "AI जीत गया!", youWin: "आप जीत गए!", draw: "यह एक ड्रॉ है!", timeUp: "समय समाप्त!", aiThinking: "AI सोच रहा है...", timeLeft: "समय बचा है:", "5sec": "५ सेकंड", "10sec": "१० सेकंड", "15sec": "१५ सेकंड", "30sec": "३० सेकंड" },
+            bn: { title: "টিক ট্যাক টো", setupGame: "গেম সেটআপ", gameMode: "গেম মোড", gameType: "গেমের ধরণ", normal: "নরমাল (সময় নেই)", timed: "টাইমিং মোড", timePerTurn: "প্রতি চালের সময়", pvp: "প্লেয়ার বনাম প্লেয়ার", pve: "প্লেয়ার বনাম AI", aiDifficulty: "AI কঠিন্য", easy: "সহজ", medium: "মাঝারি", hard: "কঠিন", firstPlayer: "প্রথম চাল", random: "র‍্যান্ডম", startGame: "গেম শুরু করুন", currentPlayer: "বর্তমান চাল: ", playerX: "খেলোয়াড় X", playerO: "খেলোয়াড় O", draws: "ড্র", resetGame: "বোর্ড রিসেট", newGame: "আবার খেলুন", home: "হোম", language: "ভাষা", theme: "থিম", light: "লাইট", dark: "ডার্ক", sound: "গেম সাউন্ড", fireworks: "রকেট সাউন্ড", on: "অন", off: "অফ", resetScores: "স্কোর রিসেট", playerXWins: "খেলোয়াড় X জিতেছে!", playerOWins: "খেলোয়াড় O জিতেছে!", aiWins: "AI জিতেছে!", youWin: "আপনি জিতেছেন!", draw: "খেলা ড্র হয়েছে!", timeUp: "সময় শেষ!", aiThinking: "AI ভাবছে...", timeLeft: "সময় বাকি:", "5sec": "৫ সেকেন্ড", "10sec": "১০ সেকেন্ড", "15sec": "১৫ সেকেন্ড", "30sec": "৩০ সেকেন্ড" }
+        };
+
+        // --- FIREWORKS ENGINE & SOUND MANAGER ---
+        const trailsStage = new Stage('trails-canvas');
+        const mainStage = new Stage('main-canvas');
+        const stages = [trailsStage, mainStage];
+
+        const COLOR = { Red: '#ff0043', Green: '#14fc56', Blue: '#1e7fff', Purple: '#e60aff', Gold: '#ffbf36', White: '#ffffff' };
+        const INVISIBLE = '_INVISIBLE_';
+        const PI_2 = Math.PI * 2;
+        let simSpeed = 1;
+
+        // Sound Manager (Using External Sounds)
+        const soundManager = {
+            baseURL: 'https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/',
+            // NOTE: We share the global window.audioCtx
+            sources: {
+                lift: { volume: 1, playbackRateMin: 0.85, playbackRateMax: 0.95, fileNames: ['lift1.mp3', 'lift2.mp3', 'lift3.mp3'] },
+                burst: { volume: 1, playbackRateMin: 0.8, playbackRateMax: 0.9, fileNames: ['burst1.mp3', 'burst2.mp3'] },
+                burstSmall: { volume: 0.25, playbackRateMin: 0.8, playbackRateMax: 1, fileNames: ['burst-sm-1.mp3', 'burst-sm-2.mp3'] },
+                crackle: { volume: 0.2, playbackRateMin: 1, playbackRateMax: 1, fileNames: ['crackle1.mp3'] },
+                crackleSmall: { volume: 0.3, playbackRateMin: 1, playbackRateMax: 1, fileNames: ['crackle-sm-1.mp3'] }
             },
-            hi: {
-                title: "टिक टैक टो",
-                setupGame: "गेम सेटअप करें",
-                gameMode: "गेम मोड",
-                gameType: "गेम का प्रकार",
-                normal: "सामान्य (समय नहीं)",
-                timed: "समयबद्ध (Timed)",
-                timePerTurn: "प्रति चाल समय",
-                pvp: "खिलाड़ी बनाम खिलाड़ी",
-                pve: "खिलाड़ी बनाम AI",
-                aiDifficulty: "AI स्तर",
-                easy: "आसान",
-                medium: "मध्यम",
-                hard: "कठिन",
-                firstPlayer: "पहला खिलाड़ी",
-                random: "रैंडम",
-                startGame: "खेल शुरू करें",
-                currentPlayer: "वर्तमान खिलाड़ी: ",
-                playerX: "खिलाड़ी X",
-                playerO: "खिलाड़ी O",
-                draws: "ড্রॉ",
-                resetGame: "बोर्ड रीसेट करें",
-                newGame: "फिर से खेलें",
-                home: "होम",
-                language: "भाषा",
-                theme: "थीम",
-                light: "लाइट",
-                dark: "डार्क",
-                sound: "ध्वनि",
-                on: "चालू",
-                off: "बंद",
-                resetScores: "स्कोर रीसेट करें",
-                playerXWins: "खिलाड़ी X जीत गया!",
-                playerOWins: "खिलाड़ी O जीत गया!",
-                aiWins: "AI जीत गया!",
-                youWin: "आप जीत गए!",
-                draw: "यह एक ड्रॉ है!",
-                timeUp: "समय समाप्त!",
-                aiThinking: "AI सोच रहा है...",
-                timeLeft: "समय बचा है:",
-                "5sec": "५ सेकंड",
-                "10sec": "१० सेकंड",
-                "15sec": "१५ सेकंड",
-                "30sec": "३० सेकंड"
+            preload() {
+                // Preload uses a temporary context if global not ready, but we rely on initAudio later
+                const tempCtx = new (window.AudioContext || window.webkitAudioContext);
+                const allFilePromises = [];
+                const types = Object.keys(this.sources);
+                types.forEach(type => {
+                    const source = this.sources[type];
+                    const { fileNames } = source;
+                    const filePromises = [];
+                    fileNames.forEach(fileName => {
+                        const fileURL = this.baseURL + fileName;
+                        const promise = fetch(fileURL)
+                            .then(r => r.arrayBuffer())
+                            .then(data => new Promise(resolve => tempCtx.decodeAudioData(data, resolve)))
+                            .catch(e => console.log("Sound load error", e));
+                        filePromises.push(promise);
+                        allFilePromises.push(promise);
+                    });
+                    Promise.all(filePromises).then(buffers => { source.buffers = buffers; });
+                });
+                return Promise.all(allFilePromises);
             },
-            bn: {
-                title: "টিক ট্যাক টো",
-                setupGame: "গেম সেটআপ",
-                gameMode: "গেম মোড",
-                gameType: "গেমের ধরণ",
-                normal: "নরমাল (সময় নেই)",
-                timed: "টাইমিং মোড",
-                timePerTurn: "প্রতি চালের সময়",
-                pvp: "প্লেয়ার বনাম প্লেয়ার",
-                pve: "প্লেয়ার বনাম AI",
-                aiDifficulty: "AI কঠিন্য",
-                easy: "সহজ",
-                medium: "মাঝারি",
-                hard: "কঠিন",
-                firstPlayer: "প্রথম চাল",
-                random: "র‍্যান্ডম",
-                startGame: "গেম শুরু করুন",
-                currentPlayer: "বর্তমান চাল: ",
-                playerX: "খেলোয়াড় X",
-                playerO: "খেলোয়াড় O",
-                draws: "ড্র",
-                resetGame: "বোর্ড রিসেট",
-                newGame: "আবার খেলুন",
-                home: "হোম",
-                language: "ভাষা",
-                theme: "থিম",
-                light: "লাইট",
-                dark: "ডার্ক",
-                sound: "সাউন্ড",
-                on: "অন",
-                off: "অফ",
-                resetScores: "স্কোর রিসেট",
-                playerXWins: "খেলোয়াড় X জিতেছে!",
-                playerOWins: "খেলোয়াড় O জিতেছে!",
-                aiWins: "AI জিতেছে!",
-                youWin: "আপনি জিতেছেন!",
-                draw: "খেলা ড্র হয়েছে!",
-                timeUp: "সময় শেষ!",
-                aiThinking: "AI ভাবছে...",
-                timeLeft: "সময় বাকি:",
-                "5sec": "৫ সেকেন্ড",
-                "10sec": "১০ সেকেন্ড",
-                "15sec": "১৫ সেকেন্ড",
-                "30sec": "৩০ সেকেন্ড"
+            playSound(type, scale=1) {
+                // Ensure global sound setting is respected
+                if(window.soundEnabled === false) return; 
+                // Ensure Fireworks specific sound setting is respected
+                if(window.fireworksSoundEnabled === false) return;
+
+                // Use global audio context
+                if (!window.audioCtx) return; 
+
+                const source = this.sources[type];
+                if (!source || !source.buffers) return;
+                const buffer = MyMath.randomChoice(source.buffers);
+                if(!buffer) return;
+                const gainNode = window.audioCtx.createGain();
+                gainNode.gain.value = source.volume * scale;
+                const bufferSource = window.audioCtx.createBufferSource();
+                bufferSource.buffer = buffer;
+                bufferSource.connect(gainNode);
+                gainNode.connect(window.audioCtx.destination);
+                bufferSource.start(0);
             }
         };
 
+        const Star = {
+            active: {}, _pool: [], _new() { return {} },
+            add(x, y, color, angle, speed, life, speedOffX, speedOffY) {
+                const instance = this._pool.pop() || this._new();
+                instance.visible = true; instance.x = x; instance.y = y; instance.prevX = x; instance.prevY = y;
+                instance.color = color; instance.speedX = Math.sin(angle) * speed + (speedOffX || 0);
+                instance.speedY = Math.cos(angle) * speed + (speedOffY || 0); instance.life = life; instance.fullLife = life;
+                instance.heavy = false;
+                if(!this.active[color]) this.active[color] = [];
+                this.active[color].push(instance);
+                return instance;
+            },
+            returnInstance(instance) { instance.onDeath && instance.onDeath(instance); instance.onDeath = null; this._pool.push(instance); }
+        };
+        
+        const Spark = {
+            active: {}, _pool: [], _new() { return {} },
+            add(x, y, color, angle, speed, life) {
+                const instance = this._pool.pop() || this._new();
+                instance.x = x; instance.y = y; instance.prevX = x; instance.prevY = y;
+                instance.color = color; instance.speedX = Math.sin(angle) * speed; instance.speedY = Math.cos(angle) * speed;
+                instance.life = life;
+                if(!this.active[color]) this.active[color] = [];
+                this.active[color].push(instance);
+                return instance;
+            },
+            returnInstance(instance) { this._pool.push(instance); }
+        };
+
+        class Shell {
+            constructor(options) { Object.assign(this, options); this.starLifeVariation = options.starLifeVariation || 0.125; }
+            launch(position, launchHeight) {
+                // FORCE FULL SCREEN WIDTH/HEIGHT
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                
+                // Full Screen Launch Coordinates
+                const launchX = position * width; 
+                const launchY = height;
+                const burstY = height - (launchHeight * height);
+                const launchDistance = launchY - burstY;
+                const launchVelocity = Math.pow(launchDistance * 0.04, 0.64);
+                this.comet = Star.add(launchX, launchY, typeof this.color === 'string' && this.color !== 'random' ? this.color : COLOR.White, Math.PI, launchVelocity, launchVelocity * 400);
+                this.comet.heavy = true; 
+                this.comet.onDeath = c => this.burst(c.x, c.y);
+                soundManager.playSound('lift');
+            }
+            burst(x, y) {
+                const speed = this.spreadSize / 96;
+                let color = this.color === 'random' ? null : this.color;
+                const count = 70; // More particles
+                for(let i=0; i<count; i++) {
+                    const angle = Math.random() * PI_2;
+                    const s = Math.random() * speed;
+                    Star.add(x, y, color || Object.values(COLOR)[Math.floor(Math.random()*6)], angle, s, this.starLife + Math.random()*200);
+                }
+                soundManager.playSound('burst');
+                if(this.crackle) soundManager.playSound('crackle');
+            }
+        }
+
+        function update(frameTime, lag) {
+            const timeStep = frameTime * simSpeed;
+            const speed = simSpeed * lag;
+            const GRAVITY = 0.9;
+            [Star, Spark].forEach(Type => {
+                Object.keys(Type.active).forEach(color => {
+                    const particles = Type.active[color];
+                    for (let i=particles.length-1; i>=0; i--) {
+                        const p = particles[i];
+                        p.life -= timeStep;
+                        if (p.life <= 0) { particles.splice(i, 1); Type.returnInstance(p); continue; }
+                        p.prevX = p.x; p.prevY = p.y;
+                        p.x += p.speedX * speed; p.y += p.speedY * speed;
+                        p.speedX *= 0.98; p.speedY *= 0.98;
+                        p.speedY += timeStep / 1000 * GRAVITY;
+                    }
+                });
+            });
+            render();
+        }
+
+        function render() {
+            const trailsCtx = trailsStage.ctx; const mainCtx = mainStage.ctx;
+            const width = trailsStage.width; const height = trailsStage.height;
+            
+            // NO SHADOW - Clear rect completely so it's transparent over UI
+            trailsCtx.clearRect(0, 0, width, height); 
+            mainCtx.clearRect(0, 0, width, height);
+            
+            Object.keys(Star.active).forEach(color => {
+                const stars = Star.active[color];
+                mainCtx.strokeStyle = color; mainCtx.lineWidth = 2; mainCtx.beginPath();
+                stars.forEach(s => { mainCtx.moveTo(s.x, s.y); mainCtx.lineTo(s.prevX, s.prevY); });
+                mainCtx.stroke();
+            });
+        }
+
+        mainStage.addEventListener('ticker', update);
+
+        // Rocket Loop Logic
+        let autoFireworksInterval;
+        function startFireworksLoop(intensity = 800) {
+             if(autoFireworksInterval) clearInterval(autoFireworksInterval);
+             autoFireworksInterval = setInterval(() => {
+                 if(document.hidden) return;
+                 // Bigger spreadSize for better visual
+                 const shell = new Shell({ spreadSize: 350, starLife: 1000, color: 'random', crackle: Math.random() < 0.3 });
+                 // Launch from random position across FULL WIDTH
+                 shell.launch(Math.random(), 0.5 + Math.random() * 0.4);
+             }, intensity);
+        }
+        function stopFireworksLoop() {
+            if(autoFireworksInterval) clearInterval(autoFireworksInterval);
+        }
+
+        // --- END FIREWORKS ENGINE ---
+
         document.addEventListener('DOMContentLoaded', () => {
             // Variables
+            window.soundEnabled = true; // Global var for sound manager
+            window.fireworksSoundEnabled = true; // Global var for fireworks sound
+            window.audioCtx = null; // SHARED AUDIO CONTEXT
+
             let gameActive = true;
             let boardState = ["", "", "", "", "", "", "", "", ""];
             let currentPlayer = "X";
@@ -524,86 +573,140 @@
             let aiDifficulty = 'hard';
             let scores = { X: 0, O: 0, Draw: 0 };
             let currentLang = 'en';
-            let soundEnabled = true;
             let humanPlayer = 'X', aiPlayer = 'O';
 
-            // --- REALISTIC FLOATING SNOW LOGIC ---
+            // FIXED: Resize Logic for Canvas to cover FULL SCREEN
+            function handleResize() {
+                const w = window.innerWidth; 
+                const h = window.innerHeight;
+                stages.forEach(s => {
+                    s.resize(w, h);
+                    if(s.ctx && s.ctx.canvas) {
+                        s.ctx.canvas.width = w;
+                        s.ctx.canvas.height = h;
+                    }
+                });
+            }
+            window.addEventListener('resize', handleResize);
+            window.addEventListener('orientationchange', handleResize); // Fix for rotation
+            handleResize();
+
+            // PRELOAD SOUNDS & START HOME FIREWORKS
+            soundManager.preload().then(() => {
+                // Home Screen: Big Rockets (800ms interval)
+                startFireworksLoop(800); 
+            });
+
+            // SNOW LOGIC
             let snowInterval;
-            
             function createSnowflake() {
                 const snow = document.createElement('div');
                 snow.classList.add('snowflake');
-                
-                // Randomize position
                 snow.style.left = Math.random() * 100 + 'vw';
-                
-                // Randomize size: 4px to 14px (Creates depth)
                 const size = Math.random() * 10 + 4 + 'px';
                 snow.style.width = size;
                 snow.style.height = size;
-                
-                // Randomize opacity
                 snow.style.opacity = Math.random() * 0.5 + 0.3;
-
-                // --- REALISTIC ANIMATION TIMING ---
-                // Fall duration: Slower = More floating feel (e.g., 5s to 12s)
                 const fallDuration = Math.random() * 7 + 5 + 's';
-                
-                // Sway duration: Faster than fall, but random (e.g., 2s to 4s)
                 const swayDuration = Math.random() * 2 + 2 + 's';
-
-                // Set different durations for vertical and horizontal movement
                 snow.style.animationDuration = `${fallDuration}, ${swayDuration}`;
-                
                 document.body.appendChild(snow);
-
-                // Remove flake after fall finishes + buffer
-                setTimeout(() => {
-                    snow.remove();
-                }, parseFloat(fallDuration) * 1000 + 500); 
+                setTimeout(() => { snow.remove(); }, parseFloat(fallDuration) * 1000 + 500); 
             }
-
             function manageSnow(intensity) {
                 if (snowInterval) clearInterval(snowInterval);
-
-                let delay;
-                if (intensity === 'heavy') {
-                    delay = 30; // Fast creation = Heavy Snow (Home)
-                } else {
-                    delay = 400; // Slow creation = Light Snow (Game)
-                }
-
-                // Clean up old snow for cleaner transition
-                const existingSnow = document.querySelectorAll('.snowflake');
-                existingSnow.forEach(s => s.remove());
-
+                let delay = intensity === 'heavy' ? 30 : 400;
                 snowInterval = setInterval(createSnowflake, delay);
             }
-
-            // Start Heavy Snow on load
             manageSnow('heavy');
-            // --- END SNOW LOGIC ---
 
-            // Audio Context
-            let audioCtx = null;
+            // --- REPLACED: NEW AUDIO SYSTEM INTEGRATION ---
             function initAudio() {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (!window.audioCtx) {
+                    window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
+                if (window.audioCtx.state === 'suspended') {
+                    window.audioCtx.resume();
                 }
             }
+
+            // 🔔 Master Sound Player (UPDATED WITH YOUR CODE)
+            function playSound(type) {
+                if (!window.soundEnabled || !window.audioCtx) return;
+
+                const osc = window.audioCtx.createOscillator();
+                const gain = window.audioCtx.createGain();
+
+                osc.connect(gain);
+                gain.connect(window.audioCtx.destination);
+
+                const now = window.audioCtx.currentTime;
+
+                // 🔘 CLICK SOUND
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(120, now + 0.1);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                }
+
+                // 🏆 WIN SOUND
+                else if (type === 'win') {
+                    osc.type = 'triangle';
+                    gain.gain.setValueAtTime(0.12, now);
+
+                    osc.frequency.setValueAtTime(523, now);
+                    osc.frequency.setValueAtTime(659, now + 0.15);
+                    osc.frequency.setValueAtTime(784, now + 0.3);
+                    osc.frequency.setValueAtTime(1046, now + 0.45);
+
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1);
+                    osc.start(now);
+                    osc.stop(now + 1);
+                }
+
+                // 💔 LOSE SOUND
+                else if (type === 'lose') {
+                    osc.type = 'sawtooth';
+                    gain.gain.setValueAtTime(0.12, now);
+
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.linearRampToValueAtTime(220, now + 0.8);
+
+                    gain.gain.linearRampToValueAtTime(0, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                }
+
+                // 🤝 DRAW SOUND
+                else if (type === 'draw') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+
+                // 🔙 BACK / RESET SOUND
+                else if (type === 'back') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.linearRampToValueAtTime(60, now + 0.2);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+            }
+            // ------------------------------------------------
 
             // Elements
             const screens = { setup: document.getElementById('gameSetupScreen'), game: document.getElementById('gameContent') };
-            const selects = { 
-                mode: document.getElementById('gameModeSelect'), 
-                type: document.getElementById('gameTypeSelect'), 
-                time: document.getElementById('timeLimitSelect'), 
-                ai: document.getElementById('aiDifficultySelect'), 
-                first: document.getElementById('firstPlayerSelect') 
-            };
+            const selects = { mode: document.getElementById('gameModeSelect'), type: document.getElementById('gameTypeSelect'), time: document.getElementById('timeLimitSelect'), ai: document.getElementById('aiDifficultySelect'), first: document.getElementById('firstPlayerSelect') };
             const timeContainer = document.getElementById('timeSelectionContainer');
             const aiContainer = document.getElementById('aiDifficultyContainer');
             const board = document.getElementById('gameBoard');
@@ -620,11 +723,12 @@
             selects.type.addEventListener('change', (e) => timeContainer.style.display = e.target.value === 'timed' ? 'block' : 'none');
 
             document.getElementById('startGameButton').addEventListener('click', () => {
-                initAudio(); // Enable Audio
-                playSound('back'); 
-
-                // SWITCH TO LIGHT SNOW
+                initAudio(); 
+                playSound('click'); 
                 manageSnow('light');
+                
+                // GAME MODE: Very Low Fireworks (3000ms interval) - As requested
+                startFireworksLoop(3000); 
 
                 gameMode = selects.mode.value;
                 gameType = selects.type.value;
@@ -634,9 +738,7 @@
                 let first = selects.first.value;
                 currentPlayer = first === 'random' ? (Math.random() < 0.5 ? 'X' : 'O') : first;
                 
-                if (gameMode === 'pve') {
-                    humanPlayer = 'X'; aiPlayer = 'O';
-                }
+                if (gameMode === 'pve') { humanPlayer = 'X'; aiPlayer = 'O'; }
 
                 screens.setup.style.display = 'none';
                 screens.game.style.display = 'flex';
@@ -648,7 +750,6 @@
                     timerDisplay.style.display = 'none';
                     timerText.style.display = 'none';
                 }
-
                 startNewGame();
             });
 
@@ -662,10 +763,7 @@
                 updateStatus();
                 
                 if (gameType === 'timed') startTimer();
-
-                if (gameMode === 'pve' && currentPlayer === aiPlayer) {
-                    setTimeout(aiMove, 800);
-                }
+                if (gameMode === 'pve' && currentPlayer === aiPlayer) { setTimeout(aiMove, 800); }
             }
 
             function createBoard() {
@@ -683,7 +781,6 @@
                 const idx = e.target.dataset.index;
                 if (boardState[idx] !== "" || !gameActive) return;
                 if (gameMode === 'pve' && currentPlayer === aiPlayer) return;
-
                 makeMove(idx, currentPlayer);
             }
 
@@ -692,7 +789,7 @@
                 const cell = board.children[index];
                 cell.classList.add(player.toLowerCase());
                 cell.textContent = player;
-                playSound('click');
+                playSound('click'); // Use new click sound
 
                 if (checkWin(player)) {
                     endGame(player);
@@ -702,7 +799,6 @@
                     currentPlayer = currentPlayer === "X" ? "O" : "X";
                     updateStatus();
                     if (gameType === 'timed') startTimer();
-                    
                     if (gameMode === 'pve' && currentPlayer === aiPlayer && gameActive) {
                         updateStatus(true);
                         setTimeout(aiMove, 800);
@@ -710,21 +806,15 @@
                 }
             }
 
-            // --- Timer Logic ---
             function startTimer() {
                 clearInterval(timerInterval);
                 if (gameType !== 'timed' || !gameActive) return;
-
                 timeLeft = turnTimeLimit;
                 updateTimerUI();
-
                 timerInterval = setInterval(() => {
                     timeLeft--;
                     updateTimerUI();
-                    if (timeLeft <= 0) {
-                        clearInterval(timerInterval);
-                        handleTimeout();
-                    }
+                    if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeout(); }
                 }, 1000);
             }
 
@@ -740,22 +830,19 @@
             function handleTimeout() {
                 if (!gameActive) return;
                 const winner = currentPlayer === 'X' ? 'O' : 'X';
-                if (gameMode === 'pve' && currentPlayer === humanPlayer) {
-                     playSound('lose');
-                } else {
-                     playSound('win');
-                }
-                
                 const winMsg = translations[currentLang].timeUp;
                 showWinner(winner, true, winMsg);
+                
+                // Play Timeout Sound (Win for opponent)
+                if (gameMode === 'pve' && winner === aiPlayer) playSound('lose');
+                else playSound('win');
+
                 gameActive = false;
                 scores[winner]++;
                 updateScores();
             }
-
             function stopTimer() { clearInterval(timerInterval); }
 
-            // --- AI & Win Logic ---
             function checkWin(player) {
                 const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
                 return wins.some(combo => {
@@ -773,15 +860,12 @@
                 const rect1 = cells[combo[0]].getBoundingClientRect();
                 const rect2 = cells[combo[2]].getBoundingClientRect();
                 const boardRect = board.getBoundingClientRect();
-                
                 const x1 = rect1.left + rect1.width/2 - boardRect.left;
                 const y1 = rect1.top + rect1.height/2 - boardRect.top;
                 const x2 = rect2.left + rect2.width/2 - boardRect.left;
                 const y2 = rect2.top + rect2.height/2 - boardRect.top;
-                
                 const length = Math.hypot(x2-x1, y2-y1);
                 const angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI;
-                
                 line.style.width = `${length}px`;
                 line.style.transform = `translate(${x1}px, ${y1}px) rotate(${angle}deg)`;
                 line.style.display = 'block';
@@ -792,20 +876,48 @@
                 stopTimer();
                 if (winner === 'Draw') {
                     scores.Draw++;
-                    playSound('draw');
+                    playSound('draw'); 
                     showWinner('Draw');
                 } else {
                     scores[winner]++;
-                    if (gameMode === 'pve') {
-                        playSound(winner === aiPlayer ? 'lose' : 'win');
+                    
+                    // WINNING LOGIC: EXTREME FIREWORKS (Full Screen Celebration)
+                    if (window.fireworksSoundEnabled) soundManager.playSound('burst');
+                    startFireworksLoop(200); // Super fast firing (200ms)
+                    
+                    // Also launch a few immediate ones for impact
+                    const width = window.innerWidth;
+                    for(let i=0; i<3; i++) {
+                         setTimeout(() => {
+                             const shell = new Shell({ spreadSize: 350, starLife: 1000, color: 'random', crackle: true });
+                             shell.launch(Math.random(), 0.5 + Math.random() * 0.4);
+                         }, i * 300);
+                    }
+
+                    showWinner(winner);
+                    
+                    // Play Win/Lose Sound based on mode
+                    if (gameMode === 'pve' && winner === aiPlayer) {
+                        playSound('lose');
                     } else {
                         playSound('win');
                     }
-                    
-                    if(gameMode !== 'pve' || winner !== aiPlayer) triggerConfetti();
-                    showWinner(winner);
                 }
                 updateScores();
+            }
+
+            function updateScores() {
+                document.getElementById('scoreX').textContent = scores.X;
+                document.getElementById('scoreO').textContent = scores.O;
+                document.getElementById('scoreDraw').textContent = scores.Draw;
+            }
+
+            function updateStatus(isAIThinking = false) {
+                if (isAIThinking) {
+                    status.textContent = translations[currentLang].aiThinking;
+                } else {
+                    status.textContent = `${translations[currentLang].currentPlayer} ${currentPlayer}`;
+                }
             }
 
             function aiMove() {
@@ -821,118 +933,36 @@
                 return available.length ? available[Math.floor(Math.random() * available.length)] : -1;
             }
 
-            function getBestMove() {
-                return minimax(boardState, aiPlayer).index;
-            }
+            function getBestMove() { return minimax(boardState, aiPlayer).index; }
 
             function minimax(newBoard, player) {
                 let avail = newBoard.map((v, i) => v === "" ? i : null).filter(v => v !== null);
                 if (checkWinState(newBoard, humanPlayer)) return { score: -10 };
                 if (checkWinState(newBoard, aiPlayer)) return { score: 10 };
                 if (avail.length === 0) return { score: 0 };
-
                 let moves = [];
                 for (let i of avail) {
                     let move = {};
                     move.index = i;
                     newBoard[i] = player;
-                    if (player === aiPlayer) {
-                        move.score = minimax(newBoard, humanPlayer).score;
-                    } else {
-                        move.score = minimax(newBoard, aiPlayer).score;
-                    }
+                    if (player === aiPlayer) move.score = minimax(newBoard, humanPlayer).score;
+                    else move.score = minimax(newBoard, aiPlayer).score;
                     newBoard[i] = "";
                     moves.push(move);
                 }
-
                 let bestMove;
                 if (player === aiPlayer) {
                     let bestScore = -10000;
-                    for (let i = 0; i < moves.length; i++) {
-                        if (moves[i].score > bestScore) { bestScore = moves[i].score; bestMove = i; }
-                    }
+                    for (let i = 0; i < moves.length; i++) { if (moves[i].score > bestScore) { bestScore = moves[i].score; bestMove = i; } }
                 } else {
                     let bestScore = 10000;
-                    for (let i = 0; i < moves.length; i++) {
-                        if (moves[i].score < bestScore) { bestScore = moves[i].score; bestMove = i; }
-                    }
+                    for (let i = 0; i < moves.length; i++) { if (moves[i].score < bestScore) { bestScore = moves[i].score; bestMove = i; } }
                 }
                 return moves[bestMove];
             }
-            
             function checkWinState(board, player) {
                  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
                  return wins.some(c => board[c[0]] === player && board[c[1]] === player && board[c[2]] === player);
-            }
-
-            // --- Sound System ---
-            function playSound(type) {
-                if(!soundEnabled || !audioCtx) return;
-                if(audioCtx.state === 'suspended') audioCtx.resume();
-
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                const now = audioCtx.currentTime;
-
-                if (type === 'click') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(600, now);
-                    osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.1);
-                    osc.start(now);
-                    osc.stop(now + 0.1);
-                } else if (type === 'win') {
-                    osc.type = 'triangle';
-                    gain.gain.setValueAtTime(0.1, now);
-                    osc.frequency.setValueAtTime(523.25, now); 
-                    osc.frequency.setValueAtTime(659.25, now + 0.15); 
-                    osc.frequency.setValueAtTime(783.99, now + 0.30); 
-                    osc.frequency.setValueAtTime(1046.50, now + 0.45); 
-                    gain.gain.setValueAtTime(0.1, now + 0.45);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-                    osc.start(now);
-                    osc.stop(now + 1.2);
-                } else if (type === 'lose') {
-                    osc.type = 'sawtooth';
-                    gain.gain.setValueAtTime(0.1, now);
-                    osc.frequency.setValueAtTime(440, now); 
-                    osc.frequency.linearRampToValueAtTime(311.13, now + 0.4); 
-                    osc.frequency.linearRampToValueAtTime(220, now + 0.8); 
-                    gain.gain.linearRampToValueAtTime(0, now + 0.8);
-                    osc.start(now);
-                    osc.stop(now + 0.8);
-                } else if (type === 'draw') {
-                    osc.type = 'square';
-                    osc.frequency.setValueAtTime(300, now);
-                    gain.gain.setValueAtTime(0.05, now);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
-                    osc.start(now);
-                    osc.stop(now + 0.3);
-                } else if (type === 'back') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(200, now);
-                    osc.frequency.linearRampToValueAtTime(50, now + 0.2);
-                    gain.gain.setValueAtTime(0.1, now);
-                    gain.gain.linearRampToValueAtTime(0, now + 0.2);
-                    osc.start(now);
-                    osc.stop(now + 0.2);
-                }
-            }
-
-            // --- UI Helpers ---
-            function updateStatus(thinking = false) {
-                const base = translations[currentLang].currentPlayer;
-                const think = translations[currentLang].aiThinking;
-                status.innerHTML = thinking ? `${think} <i class="fas fa-spinner fa-spin"></i>` : `${base} <span style="color:var(--primary-accent-color-x);">${currentPlayer}</span>`;
-            }
-
-            function updateScores() {
-                document.getElementById('scoreX').textContent = scores.X;
-                document.getElementById('scoreO').textContent = scores.O;
-                document.getElementById('scoreDraw').textContent = scores.Draw;
             }
 
             function showWinner(winner, isTimeout = false, customMsg = null) {
@@ -945,12 +975,8 @@
                     icon.textContent = '🤝';
                     text.className = 'winner-text';
                 } else {
-                    if (isTimeout && customMsg) {
-                        text.textContent = customMsg;
-                    } else {
-                        text.textContent = winner === 'X' ? translations[currentLang].playerXWins : translations[currentLang].playerOWins;
-                    }
-
+                    if (isTimeout && customMsg) text.textContent = customMsg;
+                    else text.textContent = winner === 'X' ? translations[currentLang].playerXWins : translations[currentLang].playerOWins;
                     if (gameMode === 'pve' && winner === aiPlayer) {
                         icon.textContent = '💔';
                         text.className = 'winner-text lose';
@@ -963,11 +989,13 @@
             }
 
             function goHome() {
-                // SWITCH TO HEAVY SNOW
                 manageSnow('heavy');
-                
                 playSound('back');
                 stopTimer();
+                
+                // BACK TO HOME: Medium/Big Fireworks (800ms)
+                startFireworksLoop(800);
+
                 gameActive = false;
                 screens.game.style.display = 'none';
                 screens.setup.style.display = 'flex';
@@ -975,65 +1003,59 @@
                 document.getElementById('overlay').classList.remove('active');
             }
 
-            function triggerConfetti() {
-                for(let i=0; i<30; i++) {
-                    const c = document.createElement('div');
-                    c.className = 'confetti';
-                    c.style.left = Math.random()*100+'vw';
-                    c.style.backgroundColor = `hsl(${Math.random()*360}, 100%, 50%)`;
-                    document.body.appendChild(c);
-                    setTimeout(() => c.remove(), 3000);
-                }
-            }
-
-            // --- Event Listeners ---
             document.getElementById('resetButton').addEventListener('click', () => { playSound('back'); startNewGame(); });
-            document.getElementById('playAgainBtn').addEventListener('click', () => { playSound('click'); startNewGame(); });
+            document.getElementById('playAgainBtn').addEventListener('click', () => { 
+                playSound('click'); 
+                // Back to GAME MODE: Low Fireworks (3000ms)
+                startFireworksLoop(3000);
+                startNewGame(); 
+            });
             homeBtn.addEventListener('click', goHome);
             modalHomeBtn.addEventListener('click', () => { document.getElementById('winnerModal').classList.remove('show'); goHome(); });
-            document.getElementById('resetScoresButton').addEventListener('click', () => {
-                scores = { X: 0, O: 0, Draw: 0 };
-                updateScores();
-                playSound('back');
-            });
+            document.getElementById('resetScoresButton').addEventListener('click', () => { scores = { X: 0, O: 0, Draw: 0 }; updateScores(); playSound('back'); });
 
-            // Menu
-            document.getElementById('hamburgerIcon').addEventListener('click', () => {
-                document.getElementById('sideMenu').classList.add('open');
-                document.getElementById('overlay').classList.add('active');
-            });
-            document.getElementById('closeMenuBtn').addEventListener('click', () => {
-                document.getElementById('sideMenu').classList.remove('open');
-                document.getElementById('overlay').classList.remove('active');
-            });
-            document.getElementById('overlay').addEventListener('click', () => {
-                document.getElementById('sideMenu').classList.remove('open');
-                document.getElementById('overlay').classList.remove('active');
-            });
+            // Menu & Lang Logic
+            document.getElementById('hamburgerIcon').addEventListener('click', () => { document.getElementById('sideMenu').classList.add('open'); document.getElementById('overlay').classList.add('active'); });
+            document.getElementById('closeMenuBtn').addEventListener('click', () => { document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); });
+            document.getElementById('overlay').addEventListener('click', () => { document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); });
 
-            // Language Logic
             function setLang(l) {
                 currentLang = l;
-                document.querySelectorAll('[data-translate]').forEach(el => {
-                    const key = el.dataset.translate;
-                    if (translations[l][key]) el.textContent = translations[l][key];
-                });
+                document.querySelectorAll('[data-translate]').forEach(el => { const key = el.dataset.translate; if (translations[l][key]) el.textContent = translations[l][key]; });
                 document.getElementById('langEn').classList.toggle('active', l==='en');
                 document.getElementById('langHi').classList.toggle('active', l==='hi');
                 document.getElementById('langBn').classList.toggle('active', l==='bn');
-                
-                // Update specific dynamic texts
                 if(gameActive) updateStatus();
             }
             document.getElementById('langEn').addEventListener('click', () => setLang('en'));
             document.getElementById('langHi').addEventListener('click', () => setLang('hi'));
             document.getElementById('langBn').addEventListener('click', () => setLang('bn'));
-
-            // Theme & Sound Toggle
             document.getElementById('themeLight').addEventListener('click', () => document.body.className = 'light-theme');
             document.getElementById('themeDark').addEventListener('click', () => document.body.className = 'dark-theme');
-            document.getElementById('soundOn').addEventListener('click', () => soundEnabled = true);
-            document.getElementById('soundOff').addEventListener('click', () => soundEnabled = false);
+            
+            // GENERAL SOUND TOGGLE
+            document.getElementById('soundOn').addEventListener('click', () => {
+                window.soundEnabled = true;
+                document.getElementById('soundOn').classList.add('active');
+                document.getElementById('soundOff').classList.remove('active');
+            });
+            document.getElementById('soundOff').addEventListener('click', () => {
+                window.soundEnabled = false;
+                document.getElementById('soundOff').classList.add('active');
+                document.getElementById('soundOn').classList.remove('active');
+            });
+
+            // FIREWORKS SOUND TOGGLE (NEW)
+            document.getElementById('fwSoundOn').addEventListener('click', () => {
+                window.fireworksSoundEnabled = true;
+                document.getElementById('fwSoundOn').classList.add('active');
+                document.getElementById('fwSoundOff').classList.remove('active');
+            });
+            document.getElementById('fwSoundOff').addEventListener('click', () => {
+                window.fireworksSoundEnabled = false;
+                document.getElementById('fwSoundOff').classList.add('active');
+                document.getElementById('fwSoundOn').classList.remove('active');
+            });
 
             setLang('en');
         });
