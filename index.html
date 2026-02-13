@@ -844,7 +844,7 @@
             document.getElementById('soundOff').addEventListener('click', () => { soundEnabled=false; updateToggle('sound', false); });
             
             document.getElementById('musicOn').addEventListener('click', () => { musicEnabled=true; updateToggle('music', true); if(gameActive && document.getElementById('gameContent').style.display==='flex') playMusic(); });
-            document.getElementById('musicOff').addEventListener('click', () => { musicEnabled=false; updateToggle('music', true); stopMusic(); });
+            document.getElementById('musicOff').addEventListener('click', () => { musicEnabled=false; updateToggle('music', false); stopMusic(); });
 
             document.getElementById('voiceOn').addEventListener('click', () => { voiceEnabled=true; updateToggle('voice', true); });
             document.getElementById('voiceOff').addEventListener('click', () => { voiceEnabled=false; updateToggle('voice', false); });
