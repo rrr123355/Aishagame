@@ -467,26 +467,23 @@
             let currentSeason = 'snow';
 
             let audioCtx = null;
+            let bgMusic = new Audio('bg_music.mp3');
+            bgMusic.loop = true;
+            bgMusic.volume = 0.4;
             function initAudio() {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
             }
 
             function playMusic() {
-                if (!musicEnabled || !audioCtx) return;
-                stopMusic();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-                osc.start();
-                musicInterval = { osc, gain };
+                if (!musicEnabled) {
+                    stopMusic();
+                    return;
+                }
+                bgMusic.play().catch(() => {});
             }
             function stopMusic() {
-                if (musicInterval) { musicInterval.osc.stop(); musicInterval = null; }
+                bgMusic.pause();
             }
 
             let weatherInterval;
@@ -544,7 +541,9 @@
                 turnTimeLimit = parseInt(document.getElementById('timeLimitSelect').value);
                 aiDifficulty = document.getElementById('aiDifficultySelect').value;
 
-                document.getElementById('gameSetupScreen').style.display = 'none';
+                // Stop music when entering game
+            stopMusic();
+            document.getElementById('gameSetupScreen').style.display = 'none';
                 document.getElementById('gameContent').style.display = 'flex';
                 document.getElementById('displayXName').textContent = p1Name;
                 document.getElementById('displayOName').textContent = p2Name;
@@ -787,6 +786,8 @@
                 document.getElementById('gameSetupScreen').style.display = 'flex';
                 document.getElementById('sideMenu').classList.remove('open');
                 document.getElementById('overlay').classList.remove('active');
+            // Restart music when returning to home
+            if (musicEnabled) playMusic();
             }
 
             function playSound(type) {
@@ -843,7 +844,7 @@
             document.getElementById('soundOff').addEventListener('click', () => { soundEnabled=false; updateToggle('sound', false); });
             
             document.getElementById('musicOn').addEventListener('click', () => { musicEnabled=true; updateToggle('music', true); if(gameActive && document.getElementById('gameContent').style.display==='flex') playMusic(); });
-            document.getElementById('musicOff').addEventListener('click', () => { musicEnabled=false; updateToggle('music', false); stopMusic(); });
+            document.getElementById('musicOff').addEventListener('click', () => { musicEnabled=false; updateToggle('music', true); stopMusic(); });
 
             document.getElementById('voiceOn').addEventListener('click', () => { voiceEnabled=true; updateToggle('voice', true); });
             document.getElementById('voiceOff').addEventListener('click', () => { voiceEnabled=false; updateToggle('voice', false); });
@@ -868,10 +869,18 @@
             // ------------------------------------
 
             setLang('en');
-            updateToggle('sound', true); updateToggle('music', false); updateToggle('voice', true);
+            updateToggle('sound', true); updateToggle('music', true); updateToggle('voice', true);
             updateScores();
             setWeather('snow'); 
         });
-    </script>
+    
+        // Auto-play music on home screen after first user interaction
+        document.body.addEventListener('click', function startMusic() {
+            if (musicEnabled && document.getElementById('gameSetupScreen').style.display !== 'none') {
+                playMusic();
+            }
+            document.body.removeEventListener('click', startMusic);
+        }, { once: true });
+        </script>
 </body>
 </html>
