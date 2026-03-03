@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title data-translate="title">Tic Tac Toe - Ultimate Pro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        :root {
+            --bg-color: #e0e5ec;
+            --text-color: #3a3a3a;
+            --primary-accent-color-x: #007bff; 
+            --primary-accent-color-x-dark: #0056b3;
+            --secondary-accent-color-o: #d946ef; 
+            --secondary-accent-color-o-dark: #a21caf;
+            --highlight-color: #ffc107; 
+            --defeat-color: #ef4444;
+            --shadow-light: #ffffff;
+            --shadow-dark: #a3b1c6;
+            --disabled-opacity: 0.6;
+            --cell-font-size: clamp(2.5em, 12vw, 3.5em);
+            --status-font-size: clamp(1.2em, 4vw, 1.5em);
+            --button-font-size: clamp(0.9em, 3vw, 1em);
+            --border-radius: 15px;
+            --neu-blur: 15px;
+            --neu-distance: 8px;
+        }
+
+        body.dark-theme {
+            --bg-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --primary-accent-color-x: #3498db;
+            --primary-accent-color-x-dark: #2980b9;
+            --secondary-accent-color-o: #e879f9;
+            --secondary-accent-color-o-dark: #c026d3;
+            --highlight-color: #f1c40f;
+            --defeat-color: #e74c3c;
+            --shadow-light: #3a506b;
+            --shadow-dark: #1c2833;
+        }
+
+        /* Space Theme Specifics */
+        body.space-mode {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --shadow-light: #1e293b;
+            --shadow-dark: #020617;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; width: 100%; overflow: hidden; }
+        body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; transition: background-color 0.5s ease, color 0.5s ease; }
+
+        .app-container {
+            width: 100%; height: 100%; max-width: 500px; max-height: 900px;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+            background-color: var(--bg-color);
+            box-shadow: var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+            border-radius: var(--border-radius); overflow-y: auto; position: relative; z-index: 10;
+        }
+        @media (min-width: 501px) { .app-container { max-width: 100%; max-height: 100%; border-radius: 0; } }
+        
+        /* Setup Screen */
+        .game-setup-screen { display: flex; flex-direction: column; align-items: center; justify-content: start; width: 100%; height: 100%; padding: 20px; text-align: center; overflow-y: auto;}
+        .game-setup-screen h2 { font-size: clamp(1.8em, 6vw, 2.5em); margin-bottom: 20px; margin-top: 10px;}
+        
+        .input-group { width: 100%; max-width: 350px; margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 0.9em; font-weight: 600; margin-bottom: 5px; margin-left: 5px;}
+        .neumorphic-input {
+            width: 100%; padding: 12px 15px; border: none; border-radius: var(--border-radius);
+            background-color: var(--bg-color); color: var(--text-color); font-size: 0.95em; outline: none;
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+        }
+
+        .setup-option { margin-bottom: 15px; width: 100%; max-width: 350px; }
+        .setup-option label { display: block; font-size: var(--button-font-size); font-weight: 600; margin-bottom: 8px; }
+        
+        .neumorphic-select-container {
+            position: relative; background-color: var(--bg-color); border-radius: var(--border-radius);
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+        }
+        .neumorphic-select-container select {
+            width: 100%; padding: 12px 15px; font-size: var(--button-font-size); background-color: transparent; border: none; border-radius: var(--border-radius); color: var(--text-color); appearance: none; cursor: pointer;
+        }
+        .neumorphic-select-container::after { 
+            content: '\f078'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; top: 50%; right: 15px; transform: translateY(-50%); color: var(--text-color); pointer-events: none; 
+        }
+
+        /* Game Content */
+        .game-content { display: none; flex-direction: column; align-items: center; width: 100%; height: 100%; }
+
+        header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px; }
+        header h1 { font-size: clamp(1.2em, 5vw, 1.5em); font-weight: 700; }
+
+        .icon-btn {
+            font-size: clamp(1.2em, 4vw, 1.4em); padding: 10px; cursor: pointer; border-radius: 50%; color: var(--text-color);
+            box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light); transition: all 0.2s;
+        }
+        .icon-btn:active { box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); color: var(--primary-accent-color-x); }
+        .home-icon { margin-right: auto; margin-right: 15px; } 
+
+        .score-board {
+            display: flex; justify-content: space-around; width: 100%; max-width: 380px; margin-bottom: 15px; padding: 10px;
+            background-color: var(--bg-color); border-radius: var(--border-radius);
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+        }
+        .score-item { text-align: center; font-size: 0.8em; font-weight: 600; width: 33%; }
+        .score-item span.name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .score-item span.score { display: block; font-size: 1.2em; font-weight: 700; }
+        #scoreXContainer { color: var(--primary-accent-color-x); }
+        #scoreOContainer { color: var(--secondary-accent-color-o); }
+
+        .status-display {
+            font-size: var(--status-font-size); margin-bottom: 15px; font-weight: 600; padding: 10px 20px;
+            border-radius: var(--border-radius); background-color: var(--bg-color);
+            box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+            text-align: center; min-height: 50px; display: flex; align-items: center; justify-content: center; width: 100%;
+        }
+
+        .timer-display { display: none; width: 100%; max-width: 300px; height: 10px; background: var(--bg-color); border-radius: 10px; margin-bottom: 15px; overflow: hidden; position: relative; box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light); }
+        .timer-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #4ade80, #ef4444); transition: width 1s linear; border-radius: 10px; }
+        .timer-text { font-size: 0.9em; font-weight: bold; margin-bottom: 5px; display: none; }
+
+        .game-board-container { position: relative; margin-bottom: 20px; }
+        .game-board {
+            display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+            width: clamp(270px, 85vw, 360px); height: clamp(270px, 85vw, 360px); gap: 10px;
+        }
+
+        .cell {
+            background-color: var(--bg-color); border-radius: var(--border-radius); display: flex; justify-content: center; align-items: center;
+            font-size: var(--cell-font-size); font-weight: 700; cursor: pointer; position: relative;
+            box-shadow: var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+            transition: all 0.3s ease;
+        }
+        .cell:active:not(.disabled) {
+             box-shadow: inset var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), inset calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+        }
+        
+        /* Skin Styles */
+        .cell.x { background: linear-gradient(135deg, var(--primary-accent-color-x-dark), var(--primary-accent-color-x)); color: white; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.3); }
+        .cell.o { background: linear-gradient(135deg, var(--secondary-accent-color-o-dark), var(--secondary-accent-color-o)); color: white; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.3); }
+        .cell.skin-text.x, .cell.skin-text.o { background: var(--bg-color); box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); }
+        .cell.skin-neon.x { background: #000; color: #00f3ff; text-shadow: 0 0 10px #00f3ff, 0 0 20px #00f3ff; border: 2px solid #00f3ff; }
+        .cell.skin-neon.o { background: #000; color: #ff00ff; text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff; border: 2px solid #ff00ff; }
+
+        .winning-line {
+            position: absolute;
+            height: 4px;
+            transform-origin: left center;
+            z-index: 100;
+            display: none;
+            border-radius: 2px;
+            background: transparent;
+            overflow: visible;
+        }
+        .winning-line::before {
+            content: '';
+            position: absolute;
+            inset: -8px 0;
+            border-radius: 12px;
+            background: linear-gradient(90deg, transparent 0%, rgba(0,220,255,0.2) 20%, rgba(0,220,255,0.4) 50%, rgba(0,220,255,0.2) 80%, transparent 100%);
+            filter: blur(7px);
+            animation: laserOuter 0.9s ease-in-out infinite alternate;
+        }
+        .winning-line::after {
+            content: '';
+            position: absolute;
+            inset: -3px 0;
+            border-radius: 6px;
+            background: linear-gradient(90deg, rgba(0,220,255,0) 0%, #00eeff 12%, #ffffff 50%, #00eeff 88%, rgba(0,220,255,0) 100%);
+            animation: laserInner 0.9s ease-in-out infinite alternate;
+        }
+        @keyframes laserOuter {
+            from { opacity:0.55; filter:blur(6px); }
+            to   { opacity:1.0;  filter:blur(11px); }
+        }
+        @keyframes laserInner {
+            from { box-shadow:0 0 6px 2px #00eeff, 0 0 16px 5px rgba(0,230,255,0.65), 0 0 35px 8px rgba(0,180,255,0.3); opacity:0.85; }
+            to   { box-shadow:0 0 10px 4px #ffffff, 0 0 26px 9px rgba(0,245,255,0.9), 0 0 55px 16px rgba(0,210,255,0.55); opacity:1.0; }
+        }
+        @keyframes laserSlice {
+            from { clip-path: inset(0 100% 0 0); }
+            to   { clip-path: inset(0 0% 0 0); }
+        }
+        @keyframes laserDot {
+            0%   { opacity:1; transform:translate(-50%,-50%) scale(1.4); }
+            100% { opacity:0; transform:translate(-50%,-50%) scale(0); }
+        }
+
+        .game-controls { display: flex; gap: 15px; margin-top: 10px; }
+        .neumorphic-button {
+            padding: 12px 25px; font-size: var(--button-font-size); font-weight: 600; color: var(--text-color);
+            background-color: var(--bg-color); border: none; border-radius: var(--border-radius); cursor: pointer;
+            box-shadow: var(--neu-distance) var(--neu-distance) var(--neu-blur) var(--shadow-dark), calc(-1 * var(--neu-distance)) calc(-1 * var(--neu-distance)) var(--neu-blur) var(--shadow-light);
+            transition: all 0.2s;
+        }
+        .neumorphic-button:active { box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light); }
+        .neumorphic-button.primary { background: linear-gradient(135deg, var(--primary-accent-color-x-dark), var(--primary-accent-color-x)); color: white; }
+
+        /* Side Menu */
+        .side-menu {
+            position: fixed; top: 0; right: -320px; width: 280px; height: 100%; background-color: var(--bg-color);
+            box-shadow: -5px 0 15px rgba(0,0,0,0.2); padding: 20px; transition: right 0.3s ease; z-index: 1000;
+            display: flex; flex-direction: column; overflow-y: auto;
+        }
+        .side-menu.open { right: 0; }
+        .close-menu-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; color: var(--text-color); cursor: pointer; }
+        .side-menu ul { list-style: none; margin-top: 40px; }
+        .side-menu li { margin-bottom: 25px; }
+        .toggle-switch { display: flex; border-radius: var(--border-radius); overflow: hidden; box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light); }
+        .toggle-switch button { flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-color); cursor: pointer; font-size: 0.85em; }
+        .toggle-switch button.active { background-color: var(--primary-accent-color-x); color: white; }
+        
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; }
+        .overlay.active { display: block; }
+
+        /* Winner Modal */
+        .winner-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
+            background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); z-index: 3000; opacity: 0; visibility: hidden; transition: all 0.3s;
+        }
+        .winner-modal.show { opacity: 1; visibility: visible; }
+        .winner-content {
+            background-color: var(--bg-color); padding: 40px; border-radius: 30px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); transform: scale(0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); width: 90%; max-width: 400px;
+        }
+        .winner-modal.show .winner-content { transform: scale(1); }
+        .winner-icon { font-size: 4em; margin: 20px 0; }
+        .winner-text { font-size: 1.8em; font-weight: 800; margin-bottom: 20px; background: linear-gradient(45deg, var(--primary-accent-color-x), var(--secondary-accent-color-o)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* --- WEATHER & ANIMATIONS --- */
+        .weather-particle { position: fixed; pointer-events: none; z-index: 99999; will-change: transform, top, opacity; }
+        
+        .snowflake {
+            top: -30px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 5px rgba(255,255,255,0.8);
+            animation-name: fall, sway; animation-timing-function: linear, ease-in-out; animation-iteration-count: infinite, infinite;
+        }
+        @keyframes fall { to { top: 110vh; } }
+        @keyframes sway { 0% { transform: translateX(-20px) rotate(0deg); } 100% { transform: translateX(20px) rotate(100deg); } }
+
+        .raindrop {
+            top: -50px; width: 2px; height: 15px; background: linear-gradient(to bottom, rgba(255,255,255,0), #60a5fa);
+            animation: rainFall linear infinite;
+        }
+        @keyframes rainFall { to { top: 110vh; } }
+
+        .star {
+            background: white; border-radius: 50%; opacity: 0;
+            animation: twinkle ease-in-out infinite;
+        }
+        @keyframes twinkle { 0%, 100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px white; } }
+
+        .firework {
+            position: absolute; width: 5px; height: 5px; border-radius: 50%;
+            animation: explode 1s ease-out forwards; pointer-events: none; z-index: 2000;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; }
+        }
+
+    </style>
+</head>
+<body class="light-theme">
+<!-- Aurora Canvas -->
+<canvas id="auroraCanvas"></canvas>
+<!-- Corner SVG gold frames -->
+<svg class="screen-corner sc-tl" viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gcTL" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff8b0"/><stop offset="45%" stop-color="#ffd040"/><stop offset="100%" stop-color="#b07000"/></linearGradient></defs><path d="M4 84 L4 4 L84 4" fill="none" stroke="url(#gcTL)" stroke-width="4.5" stroke-linecap="round"/><path d="M4 65 L4 18 L18 4" fill="none" stroke="url(#gcTL)" stroke-width="1.8" opacity="0.55" stroke-linecap="round"/><circle cx="4" cy="4" r="5.5" fill="#ffd040"/><circle cx="4" cy="4" r="2.8" fill="#fffcaa"/></svg>
+<svg class="screen-corner sc-tr" viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gcTR" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff8b0"/><stop offset="45%" stop-color="#ffd040"/><stop offset="100%" stop-color="#b07000"/></linearGradient></defs><path d="M4 84 L4 4 L84 4" fill="none" stroke="url(#gcTR)" stroke-width="4.5" stroke-linecap="round"/><circle cx="4" cy="4" r="5.5" fill="#ffd040"/><circle cx="4" cy="4" r="2.8" fill="#fffcaa"/></svg>
+<svg class="screen-corner sc-bl" viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gcBL" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff8b0"/><stop offset="45%" stop-color="#ffd040"/><stop offset="100%" stop-color="#b07000"/></linearGradient></defs><path d="M4 84 L4 4 L84 4" fill="none" stroke="url(#gcBL)" stroke-width="4.5" stroke-linecap="round"/><circle cx="4" cy="4" r="5.5" fill="#ffd040"/><circle cx="4" cy="4" r="2.8" fill="#fffcaa"/></svg>
+<svg class="screen-corner sc-br" viewBox="0 0 88 88" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="gcBR" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff8b0"/><stop offset="45%" stop-color="#ffd040"/><stop offset="100%" stop-color="#b07000"/></linearGradient></defs><path d="M4 84 L4 4 L84 4" fill="none" stroke="url(#gcBR)" stroke-width="4.5" stroke-linecap="round"/><circle cx="4" cy="4" r="5.5" fill="#ffd040"/><circle cx="4" cy="4" r="2.8" fill="#fffcaa"/></svg>
+<!-- Corner gems -->
+<div class="corner-gem cg-tl"></div>
+<div class="corner-gem cg-tr"></div>
+<div class="corner-gem cg-bl"></div>
+<div class="corner-gem cg-br"></div>
+ 
+
+    <div class="app-container">
+        
+        <!-- SETUP SCREEN -->
+        <div class="game-setup-screen" id="gameSetupScreen">
+            <h2 data-translate="setupGame">Setup Game</h2>
+            
+            <div class="input-group">
+                <label data-translate="p1Name">Player X Name</label>
+                <input type="text" id="playerXName" class="neumorphic-input" placeholder="Enter Name (e.g. Rahim)">
+            </div>
+            <div class="input-group">
+                <label data-translate="p2Name">Player O Name</label>
+                <input type="text" id="playerOName" class="neumorphic-input" placeholder="Enter Name (or AI)">
+            </div>
+
+            <div class="setup-option">
+                <label data-translate="skin">Board Skin</label>
+                <div class="neumorphic-select-container">
+                    <select id="skinSelect">
+                        <option value="classic">Classic (X / O)</option>
+                        <option value="emoji">Emoji (😜 / 😈)</option>
+                        <option value="love">Love (❤️ / 💙)</option>
+                        <option value="neon">Neon (Glowing)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setup-option">
+                <label data-translate="season">Environment</label>
+                <div class="neumorphic-select-container">
+                    <select id="seasonSelect">
+                        <option value="snow">Winter (Snow)</option>
+                        <option value="rain">Monsoon (Rain)</option>
+                        <option value="space">Space (Stars)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setup-option" id="uiThemeSetupOption">
+                <label>🎨 UI Theme</label>
+                <div class="toggle-switch" id="setupThemeSwitch">
+                    <button id="setupDayBtn">☀️ Day</button>
+                    <button id="setupNightBtn">🌙 Night</button>
+                </div>
+            </div>
+            
+            <div class="setup-option">
+                <label data-translate="gameMode">Game Mode</label>
+                <div class="neumorphic-select-container">
+                    <select id="gameModeSelect">
+                        <option value="pvp" data-translate="pvp">Player vs Player</option>
+                        <option value="pve" data-translate="pve">Player vs AI</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setup-option">
+                <label data-translate="gameType">Game Type</label>
+                <div class="neumorphic-select-container">
+                    <select id="gameTypeSelect">
+                        <option value="normal" data-translate="normal">Normal (No Timer)</option>
+                        <option value="timed" data-translate="timed">Timed Mode</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="setup-option" id="timeSelectionContainer" style="display: none;">
+                <label data-translate="timePerTurn">Time Per Turn</label>
+                <div class="neumorphic-select-container">
+                    <select id="timeLimitSelect">
+                        <option value="5">5 Seconds</option>
+                        <option value="10" selected>10 Seconds</option>
+                        <option value="15">15 Seconds</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- AI DIFFICULTY SELECTOR (UPDATED) -->
+            <div class="setup-option" id="aiDifficultyContainer" style="display: none;">
+                <label data-translate="aiDifficulty">AI Difficulty</label>
+                <div class="neumorphic-select-container">
+                    <select id="aiDifficultySelect">
+                        <option value="easy">Easy (Low)</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard (High)</option>
+                        <option value="impossible">Impossible (Very High)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Premium Start Game Button CSS -->
+<style>
+.sgb-wrapper{position:relative;width:340px;height:96px;display:flex;align-items:center;justify-content:center;margin:18px auto 0 auto;}
+.sgb-keys{position:absolute;left:-2px;top:50%;transform:translateY(-54%);z-index:30;width:46px;height:82px;filter:drop-shadow(0 3px 7px rgba(0,0,0,0.6));pointer-events:none;}
+.sgb-right{position:absolute;right:-2px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:30;pointer-events:none;}
+.sgb-icon{width:28px;height:28px;border-radius:50%;border:2.5px solid #d4900a;display:flex;align-items:center;justify-content:center;font-size:13px;animation:sgbIconPulse 3s ease-in-out infinite;}
+.sgb-star{background:radial-gradient(circle at 38% 32%,#2e62aa,#08204e);}
+.sgb-compass{background:radial-gradient(circle at 38% 32%,#ecdda0,#a07828);font-size:15px;}
+@keyframes sgbIconPulse{0%,100%{box-shadow:0 0 7px rgba(210,140,0,0.5);}50%{box-shadow:0 0 16px rgba(255,185,30,0.95),0 0 5px rgba(255,225,80,0.5);}}
+.sgb-btn{position:relative;width:290px;height:88px;border:none;background:transparent;cursor:pointer;outline:none;-webkit-tap-highlight-color:transparent;animation:sgbFloat 3.5s ease-in-out infinite;transform-style:preserve-3d;}
+.sgb-btn:focus{outline:none;box-shadow:none;}
+@keyframes sgbFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+.sgb-btn:active{animation:none;transform:scale(0.96) translateY(2px);filter:brightness(0.88);}
+.sgb-frame{position:absolute;inset:0;border-radius:19px;background:linear-gradient(155deg,#fffbc0 0%,#f2b210 8%,#ffd84c 20%,#c88000 36%,#ffe868 50%,#b07200 64%,#f0c030 78%,#c28a08 100%);box-shadow:0 0 0 2.5px #5a3400,0 7px 28px rgba(0,0,0,0.78),inset 0 2px 5px rgba(255,252,170,0.8),inset 0 -2px 5px rgba(70,35,0,0.55);animation:sgbGoldGlow 3s ease-in-out infinite;overflow:hidden;}
+.sgb-frame::before{content:'';position:absolute;top:-20%;left:-120%;width:60%;height:140%;background:linear-gradient(100deg,transparent 0%,rgba(255,255,200,0.22) 50%,transparent 100%);animation:sgbFoil 4s ease-in-out infinite;pointer-events:none;}
+@keyframes sgbFoil{0%{left:-120%;}50%{left:180%;}100%{left:180%;}}
+@keyframes sgbGoldGlow{0%,100%{box-shadow:0 0 0 2.5px #5a3400,0 7px 28px rgba(0,0,0,0.78),0 0 10px rgba(200,140,0,0.2),inset 0 2px 5px rgba(255,252,170,0.8),inset 0 -2px 5px rgba(70,35,0,0.55);}50%{box-shadow:0 0 0 2.5px #8a5400,0 7px 28px rgba(0,0,0,0.78),0 0 30px rgba(255,185,0,0.6),0 0 10px rgba(255,225,80,0.3),inset 0 2px 5px rgba(255,252,170,0.8),inset 0 -2px 5px rgba(70,35,0,0.55);}}
+.sgb-bump-t{position:absolute;top:-2px;left:50%;transform:translateX(-50%);width:52px;height:17px;background:linear-gradient(180deg,#fffabc 0%,#d09a08 100%);border-radius:12px 12px 0 0;z-index:2;}
+.sgb-bump-t::after{content:'';position:absolute;top:3px;left:50%;transform:translateX(-50%) rotate(45deg);width:10px;height:10px;background:linear-gradient(135deg,#c8f4ff,#0088ee);box-shadow:0 0 10px rgba(20,220,255,1),0 0 3px #fff;border:1px solid rgba(255,255,255,0.55);animation:sgbGemGlow 2s ease-in-out infinite;}
+.sgb-bump-b{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:46px;height:15px;background:linear-gradient(0deg,#fffabc 0%,#d09a08 100%);border-radius:0 0 12px 12px;z-index:2;}
+.sgb-bump-b::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%) rotate(45deg);width:9px;height:9px;background:linear-gradient(135deg,#c8f4ff,#0088ee);box-shadow:0 0 8px rgba(20,220,255,0.95);border:1px solid rgba(255,255,255,0.4);animation:sgbGemGlow 2s ease-in-out infinite 0.5s;}
+@keyframes sgbGemGlow{0%,100%{box-shadow:0 0 7px rgba(20,210,255,0.8);}50%{box-shadow:0 0 16px rgba(20,235,255,1),0 0 5px #fff;}}
+.sgb-cd{position:absolute;width:26px;height:26px;z-index:5;}
+.sgb-cd::before{content:'';position:absolute;inset:0;background:linear-gradient(145deg,#fffaa0,#e0a000,#ffd858,#a07000);border-radius:5px;transform:rotate(45deg) scale(0.7);box-shadow:0 2px 7px rgba(0,0,0,0.5),inset 0 1px 3px rgba(255,248,140,0.7);}
+.sgb-cd::after{content:'';position:absolute;inset:6px;background:linear-gradient(135deg,#a8f0ff,#0072e0);border-radius:3px;transform:rotate(45deg) scale(0.78);box-shadow:0 0 10px rgba(30,215,255,0.95),0 0 3px #fff;animation:sgbGemGlow 2.5s ease-in-out infinite;}
+.sgb-tl{top:2px;left:2px;}.sgb-tr{top:2px;right:2px;}.sgb-bl{bottom:2px;left:2px;}.sgb-br{bottom:2px;right:2px;}
+.sgb-tr::after,.sgb-br::after{animation-delay:0.6s;}.sgb-bl::after{animation-delay:1.2s;}
+.sgb-sg{position:absolute;top:50%;transform:translateY(-50%) rotate(45deg);width:13px;height:13px;background:linear-gradient(135deg,#b8f2ff,#0075e0);border:1.5px solid rgba(255,255,255,0.4);z-index:4;animation:sgbGemGlow 2.5s ease-in-out infinite;}
+.sgb-sgl{left:26px;animation-delay:0.4s;}.sgb-sgr{right:26px;animation-delay:0.9s;}
+.sgb-sw{position:absolute;top:50%;z-index:4;pointer-events:none;}
+.sgb-swl{left:42px;transform:translateY(-50%);}.sgb-swr{right:42px;transform:translateY(-50%) scaleX(-1);}
+.sgb-panel{position:absolute;inset:8px 12px;border-radius:12px;background:linear-gradient(175deg,#1c5cd0 0%,#0b2e82 18%,#071c58 45%,#040e3c 100%);box-shadow:inset 0 0 26px rgba(0,0,58,0.98),inset 0 3px 10px rgba(40,110,255,0.15),0 0 0 1.5px #040c2c;overflow:hidden;}
+.sgb-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:44%;background:linear-gradient(180deg,rgba(70,155,255,0.13) 0%,transparent 100%);border-radius:12px 12px 0 0;}
+.sgb-panel::after{content:'';position:absolute;top:0;left:-130%;width:75%;height:100%;background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,0.09) 50%,transparent 100%);animation:sgbSweep 3.5s ease-in-out infinite 1s;border-radius:12px;}
+@keyframes sgbSweep{0%{left:-130%;}45%{left:160%;}100%{left:160%;}}
+.sgb-sp{position:absolute;color:rgba(255,255,215,0.92);text-shadow:0 0 6px #fff,0 0 2px #ffe;pointer-events:none;z-index:6;font-size:8px;}
+.sgb-sp1{animation:sgbTw1 1.9s ease-in-out infinite alternate;}.sgb-sp2{animation:sgbTw1 1.9s ease-in-out infinite alternate-reverse;}.sgb-sp3{animation:sgbTw2 2.3s ease-in-out infinite alternate;}.sgb-sp4{animation:sgbTw2 2.3s ease-in-out infinite alternate-reverse;}
+@keyframes sgbTw1{from{opacity:0.1;transform:scale(0.6) rotate(-15deg);}to{opacity:1;transform:scale(1.6) rotate(15deg);}}
+@keyframes sgbTw2{from{opacity:0.2;transform:scale(0.75) rotate(10deg);}to{opacity:0.95;transform:scale(1.5) rotate(-10deg);}}
+.sgb-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:0;z-index:7;pointer-events:none;}
+.sgb-lc{display:inline-block;font-size:27px;font-weight:900;font-style:italic;font-family:'Georgia','Times New Roman',serif;color:#ffe840;text-shadow:0 1px 0 #fff8a0,0 2px 0 #907000,0 4px 11px rgba(0,0,0,0.95),0 0 20px rgba(255,210,0,0.4),1px 1px 0 #c08800,-1px -1px 0 #fff090;animation:sgbWave 2.5s ease-in-out infinite,sgbGoldP 3s ease-in-out infinite;}
+@keyframes sgbWave{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+@keyframes sgbGoldP{0%,100%{color:#ffe840;text-shadow:0 1px 0 #fff8a0,0 2px 0 #907000,0 4px 11px rgba(0,0,0,0.95),0 0 18px rgba(255,200,0,0.3),1px 1px 0 #c08800;}50%{color:#fff280;text-shadow:0 1px 0 #fff8a0,0 2px 0 #907000,0 4px 11px rgba(0,0,0,0.95),0 0 32px rgba(255,240,80,0.7),1px 1px 0 #c08800;}}
+.sgb-particle{position:absolute;top:50%;left:50%;width:7px;height:7px;border-radius:50%;opacity:0;pointer-events:none;z-index:20;}
+.sgb-btn.sgb-popped .sgb-particle{animation:sgbBurst 0.65s ease-out forwards;}
+@keyframes sgbBurst{0%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0.1);}}
+.sgb-ripple{position:absolute;border-radius:50%;background:rgba(100,180,255,0.35);transform:scale(0);pointer-events:none;z-index:8;animation:sgbRipple 0.7s ease-out forwards;}
+@keyframes sgbRipple{to{transform:scale(4);opacity:0;}}
+
+        /* ══════════════════════════════════════════
+           FANTASY AURORA THEME  (toggled via JS)
+           ══════════════════════════════════════════ */
+
+        /* Aurora canvas */
+        #auroraCanvas {
+            position: fixed; inset: 0;
+            width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+            display: none;
+        }
+        body.fantasy-mode #auroraCanvas { display: block; }
+        body.fantasy-mode { background: #010818 !important; }
+        body.fantasy-mode .app-container {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        /* Corner gold frames */
+        .screen-corner {
+            position: fixed; z-index: 11; pointer-events: none;
+            width: 88px; height: 88px; display: none;
+        }
+        body.fantasy-mode .screen-corner { display: block; }
+        .sc-tl{top:0;left:0;} .sc-tr{top:0;right:0;transform:scaleX(-1);}
+        .sc-bl{bottom:0;left:0;transform:scaleY(-1);} .sc-br{bottom:0;right:0;transform:scale(-1);}
+
+        /* Corner gems */
+        .corner-gem {
+            position: fixed; width: 20px; height: 20px;
+            background: linear-gradient(135deg,#90e8ff,#0068d8);
+            transform: rotate(45deg);
+            border: 1.5px solid rgba(255,255,255,0.55);
+            z-index: 12; pointer-events: none; display: none;
+            animation: cgPulse 2.5s ease-in-out infinite;
+        }
+        body.fantasy-mode .corner-gem { display: block; }
+        .cg-tl{top:13px;left:13px;} .cg-tr{top:13px;right:13px;animation-delay:.6s;}
+        .cg-bl{bottom:13px;left:13px;animation-delay:1.2s;} .cg-br{bottom:13px;right:13px;animation-delay:1.8s;}
+        @keyframes cgPulse {
+            0%,100%{box-shadow:0 0 10px rgba(40,200,255,0.7),0 0 3px #fff;}
+            50%    {box-shadow:0 0 22px rgba(40,220,255,1),0 0 8px #fff;}
+        }
+
+        /* Ambient floating particles */
+        .aurora-particle {
+            position: fixed; border-radius: 50%;
+            pointer-events: none; z-index: 1;
+            animation: apFloat linear infinite;
+            display: none;
+        }
+        body.fantasy-mode .aurora-particle { display: block; }
+        @keyframes apFloat {
+            0%  { transform: translateY(0) scale(1); opacity:.7; }
+            100%{ transform: translateY(-110vh) scale(.2); opacity:0; }
+        }
+
+        /* ── Title ── */
+        body.fantasy-mode .game-setup-screen h2 {
+            font-family: 'Georgia', serif !important;
+            font-size: clamp(1.9em,7vw,2.7em) !important;
+            font-weight: 900 !important;
+            color: #ffe840 !important;
+            text-shadow:
+                0 2px 0 #907000,
+                0 5px 16px rgba(0,0,0,.95),
+                0 0 32px rgba(255,210,0,.6),
+                1px 1px 0 #c08800,
+                -1px -1px 0 #fff090 !important;
+            letter-spacing: 2px !important;
+            animation: fTitleGlow 3s ease-in-out infinite !important;
+        }
+        @keyframes fTitleGlow {
+            0%,100%{text-shadow:0 2px 0 #907000,0 5px 16px rgba(0,0,0,.95),0 0 24px rgba(255,200,0,.45),1px 1px 0 #c08800;}
+            50%    {text-shadow:0 2px 0 #907000,0 5px 16px rgba(0,0,0,.95),0 0 48px rgba(255,230,0,.85),1px 1px 0 #c08800;}
+        }
+
+        /* ── Labels ── */
+        body.fantasy-mode .input-group label,
+        body.fantasy-mode .setup-option > label {
+            color: #ffe066 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 0 10px rgba(255,200,0,.5), 0 1px 3px rgba(0,0,0,.8) !important;
+        }
+
+        /* ── Input & Select wrapper: dark blue + layered gold border ── */
+        body.fantasy-mode .neumorphic-input,
+        body.fantasy-mode .neumorphic-select-container {
+            background: linear-gradient(180deg,rgba(8,20,75,.93) 0%,rgba(3,9,40,.97) 100%) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px   #ffd040,
+                0 0 0 4.5px #c08800,
+                0 0 0 6px   #fff0a0,
+                0 0 0 7.5px #8a5e00,
+                0 6px 24px rgba(0,0,0,.75),
+                inset 0 1px 5px rgba(60,130,255,.12) !important;
+            border-radius: 12px !important;
+            animation: gBorderPulse 3.5s ease-in-out infinite !important;
+        }
+        @keyframes gBorderPulse {
+            0%,100%{box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffd040,0 0 0 4.5px #c08800,0 0 0 6px #fff0a0,0 0 0 7.5px #8a5e00,0 6px 24px rgba(0,0,0,.75),inset 0 1px 5px rgba(60,130,255,.12);}
+            50%    {box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffe840,0 0 0 4.5px #d09800,0 0 0 6px #fffcc0,0 0 0 7.5px #9a7000,0 0 20px rgba(255,200,0,.3),0 6px 24px rgba(0,0,0,.75),inset 0 1px 5px rgba(60,130,255,.12);}
+        }
+
+        body.fantasy-mode .neumorphic-input {
+            color: #d8f0ff !important; padding: 13px 16px !important;
+        }
+        body.fantasy-mode .neumorphic-input::placeholder { color:rgba(150,190,255,.45)!important; }
+        body.fantasy-mode .neumorphic-select-container select { color:#d8f0ff!important; }
+        body.fantasy-mode .neumorphic-select-container::after { color:#ffe066!important; }
+
+        /* Top gem on each field */
+        body.fantasy-mode .neumorphic-input::before,
+        body.fantasy-mode .neumorphic-select-container::before {
+            content:'◆'!important; position:absolute!important;
+            top:-11px!important; left:50%!important; transform:translateX(-50%)!important;
+            color:#60c8ff!important; font-size:14px!important;
+            text-shadow:0 0 14px rgba(40,200,255,1),0 0 5px #fff!important;
+            z-index:5!important; pointer-events:none!important;
+            animation:gemTopAnim 2.2s ease-in-out infinite!important;
+        }
+        @keyframes gemTopAnim{
+            0%,100%{transform:translateX(-50%) scale(1);text-shadow:0 0 10px rgba(40,200,255,.8);}
+            50%    {transform:translateX(-50%) scale(1.35);text-shadow:0 0 22px rgba(40,235,255,1),0 0 7px #fff;}
+        }
+
+        /* Side gems */
+        body.fantasy-mode .input-group,
+        body.fantasy-mode .setup-option { position:relative!important; padding:0 18px!important; }
+        body.fantasy-mode .input-group::before,
+        body.fantasy-mode .setup-option::before {
+            content:'◆'!important; position:absolute!important;
+            left:0!important; top:calc(50% + 8px)!important; transform:translateY(-50%)!important;
+            color:#60c8ff!important; font-size:10px!important;
+            text-shadow:0 0 10px rgba(40,200,255,.9)!important; z-index:5!important;
+            pointer-events:none!important; animation:gemSideAnim 2.5s ease-in-out infinite!important;
+        }
+        body.fantasy-mode .input-group::after,
+        body.fantasy-mode .setup-option::after {
+            content:'◆'!important; position:absolute!important;
+            right:0!important; top:calc(50% + 8px)!important; transform:translateY(-50%)!important;
+            color:#60c8ff!important; font-size:10px!important;
+            text-shadow:0 0 10px rgba(40,200,255,.9)!important; z-index:5!important;
+            pointer-events:none!important; animation:gemSideAnim 2.5s ease-in-out infinite 1.25s!important;
+        }
+        @keyframes gemSideAnim{
+            0%,100%{color:#60c8ff;text-shadow:0 0 8px rgba(40,200,255,.8);}
+            50%    {color:#b0f4ff;text-shadow:0 0 18px rgba(40,225,255,1),0 0 5px #fff;}
+        }
+
+        /* Game content */
+        body.fantasy-mode .game-content { background:transparent!important; }
+        body.fantasy-mode header h1 {
+            color:#ffe840!important;
+            text-shadow:0 0 22px rgba(255,200,0,.65),0 2px 5px rgba(0,0,0,.9)!important;
+        }
+        body.fantasy-mode .icon-btn {
+            background:rgba(8,20,70,.75)!important;
+            box-shadow:0 0 0 2px #c08800,0 0 0 3.5px #ffd040,0 4px 14px rgba(0,0,0,.55)!important;
+            color:#ffe066!important;
+        }
+        body.fantasy-mode .score-board {
+            background:linear-gradient(180deg,rgba(10,25,80,.88),rgba(4,10,42,.96))!important;
+            box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffd040,0 0 0 4.5px #c08800,0 0 0 7px #8a5e00,0 5px 20px rgba(0,0,0,.65)!important;
+        }
+        body.fantasy-mode .score-item span.name{color:#ffe066!important;text-shadow:0 0 8px rgba(255,200,0,.4)!important;}
+        body.fantasy-mode #scoreXContainer .score{color:#60c8ff!important;}
+        body.fantasy-mode #scoreOContainer .score{color:#e879f9!important;}
+        body.fantasy-mode .status-display {
+            background:linear-gradient(180deg,rgba(10,25,80,.88),rgba(4,10,42,.96))!important;
+            box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffd040,0 0 0 4.5px #c08800,0 0 0 7px #8a5e00,0 5px 20px rgba(0,0,0,.65)!important;
+            color:#ffe066!important; text-shadow:0 0 10px rgba(255,200,0,.35)!important;
+        }
+        body.fantasy-mode .cell {
+            background:linear-gradient(145deg,rgba(14,34,100,.92),rgba(6,16,55,.97))!important;
+            box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffd040,0 0 0 4.5px #c08800,0 0 0 7px #8a5e00,0 5px 16px rgba(0,0,0,.65)!important;
+            color:#ffe066!important;
+        }
+        body.fantasy-mode .cell:hover:not(.x):not(.o){
+            box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffe840,0 0 0 4.5px #d09800,0 0 0 7px #9a7000,0 0 22px rgba(255,190,0,.35),0 5px 16px rgba(0,0,0,.65)!important;
+        }
+        body.fantasy-mode .neumorphic-button {
+            background:linear-gradient(135deg,rgba(14,34,100,.92),rgba(6,16,55,.97))!important;
+            box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffd040,0 0 0 4.5px #c08800,0 0 0 7px #8a5e00,0 4px 14px rgba(0,0,0,.6)!important;
+            color:#ffe066!important; font-weight:700!important;
+        }
+        body.fantasy-mode .neumorphic-button.primary {
+            background:linear-gradient(135deg,#1a4aaa,#0a2268)!important; color:#fff!important;
+        }
+        body.fantasy-mode .winner-content {
+            background:linear-gradient(160deg,#0a1a5a,#050e36)!important;
+            box-shadow:0 0 0 2px #c08800,0 0 0 4px #ffd040,0 0 0 6px #8a5e00,0 20px 50px rgba(0,0,0,.75)!important;
+        }
+        body.fantasy-mode .winner-text {
+            background:linear-gradient(45deg,#ffe840,#ffa500,#ffe840)!important;
+            -webkit-background-clip:text!important; -webkit-text-fill-color:transparent!important;
+        }
+        body.fantasy-mode .side-menu {
+            background:linear-gradient(180deg,#0a1a5a,#050e36)!important;
+            box-shadow:-5px 0 30px rgba(0,0,0,.75),0 0 0 1px #c08800!important;
+        }
+        body.fantasy-mode .timer-display {
+            background:rgba(8,20,70,.7)!important;
+            box-shadow:0 0 0 1.5px #6a4000,0 0 0 3px #ffd040,0 0 0 4.5px #c08800!important;
+        }
+
+
+        /* ══════════════════════════════════════════
+           NIGHT MODE — COMPLETE GOLD COVERAGE
+           ══════════════════════════════════════════ */
+
+        /* ── Side Menu ── */
+        body.fantasy-mode .side-menu {
+            background: linear-gradient(180deg, #07123a 0%, #030820 100%) !important;
+            box-shadow: -5px 0 30px rgba(0,0,0,0.85),
+                        0 0 0 1.5px #6a4000,
+                        0 0 0 3px #ffd040,
+                        0 0 0 4.5px #8a5e00 !important;
+        }
+        body.fantasy-mode .side-menu .close-menu-btn {
+            color: #ffe066 !important;
+            text-shadow: 0 0 8px rgba(255,200,0,0.5) !important;
+        }
+        body.fantasy-mode .side-menu ul li > span {
+            color: #ffe066 !important;
+            font-weight: 700 !important;
+            text-shadow: 0 0 8px rgba(255,200,0,0.4) !important;
+        }
+        body.fantasy-mode .side-menu [data-translate] {
+            color: #ffe066 !important;
+        }
+
+        /* ── Side Menu toggle switches ── */
+        body.fantasy-mode .toggle-switch {
+            background: linear-gradient(180deg, rgba(8,20,75,0.9) 0%, rgba(3,9,40,0.97) 100%) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00,
+                inset 0 1px 4px rgba(0,0,0,0.5) !important;
+            border-radius: 12px !important;
+            overflow: visible !important;
+        }
+        body.fantasy-mode .toggle-switch button {
+            color: rgba(220,200,120,0.7) !important;
+            background: transparent !important;
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+        }
+        body.fantasy-mode .toggle-switch button.active {
+            background: linear-gradient(135deg, #1a5aaa, #0a2268) !important;
+            color: #fff !important;
+            box-shadow: 0 0 10px rgba(30,120,255,0.5) !important;
+        }
+
+        /* ── Side menu reset button ── */
+        body.fantasy-mode #resetScoresButton {
+            background: linear-gradient(135deg, rgba(14,34,100,0.92), rgba(6,16,55,0.97)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00,
+                0 4px 14px rgba(0,0,0,0.6) !important;
+            color: #ffe066 !important;
+            font-weight: 700 !important;
+        }
+
+        /* ── Overlay ── */
+        body.fantasy-mode .overlay {
+            background: rgba(0, 0, 20, 0.72) !important;
+        }
+
+        /* ── Game controls buttons ── */
+        body.fantasy-mode .game-controls .neumorphic-button {
+            background: linear-gradient(135deg, rgba(14,34,100,0.92), rgba(6,16,55,0.97)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00,
+                0 4px 14px rgba(0,0,0,0.6) !important;
+            color: #ffe066 !important;
+            font-weight: 700 !important;
+        }
+
+        /* ── Timer bar container ── */
+        body.fantasy-mode .timer-display {
+            background: rgba(8,20,70,0.7) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00 !important;
+            border-radius: 10px !important;
+        }
+        body.fantasy-mode .timer-text {
+            color: #ffe066 !important;
+        }
+
+        /* ── Winner modal ── */
+        body.fantasy-mode .winner-modal {
+            background: rgba(0,0,20,0.75) !important;
+            backdrop-filter: blur(6px) !important;
+        }
+        body.fantasy-mode .winner-content {
+            background: linear-gradient(160deg, #07123a 0%, #030820 100%) !important;
+            box-shadow:
+                0 0 0 2px #6a4000,
+                0 0 0 4px #ffd040,
+                0 0 0 6px #c08800,
+                0 0 0 8px #8a5e00,
+                0 20px 50px rgba(0,0,0,0.85) !important;
+        }
+        body.fantasy-mode .winner-icon {
+            filter: drop-shadow(0 0 12px rgba(255,200,0,0.7));
+        }
+        body.fantasy-mode .winner-modal .neumorphic-button {
+            background: linear-gradient(135deg, rgba(14,34,100,0.92), rgba(6,16,55,0.97)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00,
+                0 4px 14px rgba(0,0,0,0.6) !important;
+            color: #ffe066 !important;
+        }
+        body.fantasy-mode .winner-modal .neumorphic-button.primary {
+            background: linear-gradient(135deg, #1a4aaa, #0a2268) !important;
+            color: white !important;
+        }
+
+        /* ── Home / hamburger icon buttons ── */
+        body.fantasy-mode .icon-btn {
+            background: rgba(8,20,70,0.82) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00,
+                0 4px 14px rgba(0,0,0,0.55) !important;
+            color: #ffe066 !important;
+        }
+        body.fantasy-mode .icon-btn:active {
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffe840,
+                0 0 0 4.5px #9a7000,
+                inset 0 2px 6px rgba(0,0,0,0.5) !important;
+        }
+
+        /* ── Score board ── */
+        body.fantasy-mode .score-board {
+            background: linear-gradient(180deg, rgba(10,25,80,0.9), rgba(4,10,42,0.97)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #c08800,
+                0 0 0 7px #8a5e00,
+                0 5px 20px rgba(0,0,0,0.65) !important;
+        }
+        body.fantasy-mode .score-item span.score {
+            color: #ffe840 !important;
+        }
+        body.fantasy-mode #scoreXContainer .score { color: #60c8ff !important; }
+        body.fantasy-mode #scoreOContainer .score { color: #e879f9 !important; }
+        body.fantasy-mode #scoreDraw .score { color: #ffe840 !important; }
+        body.fantasy-mode [data-translate="draws"] { color: #ffe066 !important; }
+
+        /* ── Status display ── */
+        body.fantasy-mode .status-display {
+            background: linear-gradient(180deg, rgba(10,25,80,0.9), rgba(4,10,42,0.97)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #c08800,
+                0 0 0 7px #8a5e00,
+                0 5px 20px rgba(0,0,0,0.65) !important;
+            color: #ffe066 !important;
+            text-shadow: 0 0 12px rgba(255,200,0,0.4) !important;
+        }
+
+        /* ── Game board cells (enhanced) ── */
+        body.fantasy-mode .cell {
+            background: linear-gradient(145deg, rgba(12,30,95,0.93), rgba(5,14,50,0.98)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #c08800,
+                0 0 0 7px #8a5e00,
+                0 5px 16px rgba(0,0,0,0.7) !important;
+            color: #ffe066 !important;
+            transition: all 0.22s ease !important;
+        }
+        body.fantasy-mode .cell:hover:not(.x):not(.o) {
+            background: linear-gradient(145deg, rgba(18,45,130,0.93), rgba(8,22,72,0.98)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffe840,
+                0 0 0 4.5px #d09800,
+                0 0 0 7px #9a7000,
+                0 0 24px rgba(255,185,0,0.4),
+                0 5px 16px rgba(0,0,0,0.7) !important;
+        }
+        body.fantasy-mode .cell.x {
+            background: linear-gradient(135deg, #1a3a88, #0a1e55) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00,
+                inset 0 2px 6px rgba(0,0,0,0.4) !important;
+        }
+        body.fantasy-mode .cell.o {
+            background: linear-gradient(135deg, #5a1a7a, #2a0840) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00,
+                inset 0 2px 6px rgba(0,0,0,0.4) !important;
+        }
+
+        /* ── App container border ── */
+        body.fantasy-mode .app-container {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        /* ── Setup screen overall ── */
+        body.fantasy-mode .game-setup-screen {
+            background: transparent !important;
+        }
+
+        /* ── Scrollbar in night mode ── */
+        body.fantasy-mode ::-webkit-scrollbar { width: 5px; }
+        body.fantasy-mode ::-webkit-scrollbar-track { background: rgba(4,10,42,0.8); }
+        body.fantasy-mode ::-webkit-scrollbar-thumb {
+            background: linear-gradient(#ffd040, #c08000);
+            border-radius: 4px;
+        }
+
+        /* ── Game content header ── */
+        body.fantasy-mode .game-content header {
+            position: relative;
+        }
+        body.fantasy-mode .game-content header::after {
+            content: '';
+            position: absolute;
+            bottom: -5px; left: 0; right: 0;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent, #ffd040, transparent);
+        }
+
+        /* ── UI Theme setup toggle (in setup screen) ── */
+        body.fantasy-mode #uiThemeSetupOption label {
+            color: #ffe066 !important;
+        }
+        body.fantasy-mode #setupThemeSwitch {
+            background: linear-gradient(180deg, rgba(8,20,75,0.9), rgba(3,9,40,0.97)) !important;
+            box-shadow:
+                0 0 0 1.5px #6a4000,
+                0 0 0 3px #ffd040,
+                0 0 0 4.5px #8a5e00 !important;
+        }
+
+</style>
+
+<!-- Premium Start Game Button -->
+<div class="sgb-wrapper">
+  <div class="sgb-keys">
+    <svg viewBox="0 0 48 86" width="48" height="86" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sgbSg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#e8f2ff"/><stop offset="50%" stop-color="#b0bcd8"/><stop offset="100%" stop-color="#7888a8"/></linearGradient>
+        <linearGradient id="sgbSg2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d0daf0"/><stop offset="100%" stop-color="#9098b8"/></linearGradient>
+        <linearGradient id="sgbGg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fffaa0"/><stop offset="40%" stop-color="#e8aa08"/><stop offset="100%" stop-color="#8a5800"/></linearGradient>
+        <linearGradient id="sgbGg2" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ffd040"/><stop offset="100%" stop-color="#9a6800"/></linearGradient>
+      </defs>
+      <circle cx="15" cy="16" r="11" fill="url(#sgbSg)" stroke="#6878a0" stroke-width="1.8"/>
+      <circle cx="15" cy="16" r="6" fill="none" stroke="#6878a0" stroke-width="2.8"/>
+      <circle cx="15" cy="16" r="2.2" fill="#8898b8"/>
+      <rect x="13.2" y="27" width="4.2" height="36" rx="2" fill="url(#sgbSg2)" stroke="#7888a0" stroke-width="1"/>
+      <rect x="17.4" y="47" width="8" height="4.5" rx="1.5" fill="#b0bcd0" stroke="#7888a0" stroke-width="0.9"/>
+      <rect x="17.4" y="56" width="6.5" height="4" rx="1.5" fill="#b0bcd0" stroke="#7888a0" stroke-width="0.9"/>
+      <g transform="translate(10,16)">
+        <circle cx="15" cy="16" r="11" fill="url(#sgbGg)" stroke="#7a5200" stroke-width="1.8"/>
+        <circle cx="15" cy="16" r="6" fill="none" stroke="#7a5200" stroke-width="2.8"/>
+        <circle cx="15" cy="16" r="2.2" fill="#a07800"/>
+        <rect x="13.2" y="27" width="4.2" height="34" rx="2" fill="url(#sgbGg2)" stroke="#7a5200" stroke-width="1"/>
+        <rect x="17.4" y="44" width="8" height="4.5" rx="1.5" fill="#c89010" stroke="#7a5200" stroke-width="0.9"/>
+        <rect x="17.4" y="53" width="6.5" height="4" rx="1.5" fill="#c89010" stroke="#7a5200" stroke-width="0.9"/>
+      </g>
+    </svg>
+  </div>
+
+  <button class="sgb-btn" id="startGameButton" type="button">
+    <div class="sgb-frame">
+      <div class="sgb-bump-t"></div><div class="sgb-bump-b"></div>
+      <div class="sgb-cd sgb-tl"></div><div class="sgb-cd sgb-tr"></div>
+      <div class="sgb-cd sgb-bl"></div><div class="sgb-cd sgb-br"></div>
+      <div class="sgb-sg sgb-sgl"></div><div class="sgb-sg sgb-sgr"></div>
+      <div class="sgb-sw sgb-swl">
+        <svg width="40" height="48" viewBox="0 0 40 48">
+          <path d="M32 6C14 6,4 14,6 24C8 34,21 34,19 24C17 16,8 18,10 24" fill="none" stroke="#c08000" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M32 42C14 42,4 34,6 24" fill="none" stroke="#c08000" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M34 10C38 16,36 23,29 23C25 23,25 31,32 30" fill="none" stroke="#e8a800" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="32" cy="6" r="2.8" fill="#d09800"/><circle cx="32" cy="42" r="2.8" fill="#d09800"/><circle cx="10" cy="24" r="1.8" fill="#e0a800"/>
+        </svg>
+      </div>
+      <div class="sgb-sw sgb-swr">
+        <svg width="40" height="48" viewBox="0 0 40 48">
+          <path d="M32 6C14 6,4 14,6 24C8 34,21 34,19 24C17 16,8 18,10 24" fill="none" stroke="#c08000" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M32 42C14 42,4 34,6 24" fill="none" stroke="#c08000" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M34 10C38 16,36 23,29 23C25 23,25 31,32 30" fill="none" stroke="#e8a800" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="32" cy="6" r="2.8" fill="#d09800"/><circle cx="32" cy="42" r="2.8" fill="#d09800"/><circle cx="10" cy="24" r="1.8" fill="#e0a800"/>
+        </svg>
+      </div>
+    </div>
+    <div class="sgb-panel"></div>
+    <span class="sgb-sp sgb-sp1" style="top:11px;left:65px">✦</span>
+    <span class="sgb-sp sgb-sp2" style="top:13px;right:68px">✦</span>
+    <span class="sgb-sp sgb-sp3" style="bottom:12px;left:85px">✧</span>
+    <span class="sgb-sp sgb-sp4" style="bottom:11px;right:88px">✦</span>
+    <div class="sgb-particle" style="--tx:-56px;--ty:-38px;background:#ffe840"></div>
+    <div class="sgb-particle" style="--tx:56px;--ty:-38px;background:#fff090"></div>
+    <div class="sgb-particle" style="--tx:-62px;--ty:8px;background:#ffd030"></div>
+    <div class="sgb-particle" style="--tx:62px;--ty:8px;background:#ffe840"></div>
+    <div class="sgb-particle" style="--tx:-30px;--ty:44px;background:#fff090"></div>
+    <div class="sgb-particle" style="--tx:30px;--ty:44px;background:#ffd030"></div>
+    <div class="sgb-particle" style="--tx:0;--ty:-50px;width:9px;height:9px;background:#ffe840"></div>
+    <div class="sgb-particle" style="--tx:-46px;--ty:-20px;background:#fff8b0"></div>
+    <div class="sgb-particle" style="--tx:46px;--ty:-20px;background:#fff8b0"></div>
+    <div class="sgb-label" id="sgbLabelEl"></div>
+  </button>
+
+  <div class="sgb-right">
+    <div class="sgb-icon sgb-star">⭐</div>
+    <div class="sgb-icon sgb-star" style="animation-delay:1s">⭐</div>
+    <div class="sgb-icon sgb-compass">🧭</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Wave text
+  const lbl = document.getElementById('sgbLabelEl');
+  'Start Game'.split('').forEach((ch, i) => {
+    const s = document.createElement('span');
+    s.className = 'sgb-lc';
+    s.textContent = ch === ' ' ? ' ' : ch;
+    s.style.animationDelay = i*0.07 + 's,' + i*0.12 + 's';
+    lbl.appendChild(s);
+  });
+
+  const btn = document.getElementById('startGameButton');
+
+  // Hover tilt
+  btn.addEventListener('mousemove', function(e) {
+    const r = btn.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    btn.style.transform = 'perspective(400px) rotateY(' + (x*12) + 'deg) rotateX(' + (-y*10) + 'deg) scale(1.04)';
+    btn.style.animation = 'none';
+  });
+  btn.addEventListener('mouseleave', function() {
+    btn.style.transform = '';
+    btn.style.animation = 'sgbFloat 3.5s ease-in-out infinite';
+  });
+
+  // Ripple on pointerdown (visual only, does NOT call game logic)
+  btn.addEventListener('pointerdown', function(e) {
+    const r = btn.getBoundingClientRect();
+    const rpl = document.createElement('div');
+    rpl.className = 'sgb-ripple';
+    const sz = 60;
+    rpl.style.cssText = 'width:' + sz + 'px;height:' + sz + 'px;left:' + (e.clientX - r.left - sz/2) + 'px;top:' + (e.clientY - r.top - sz/2) + 'px;';
+    btn.appendChild(rpl);
+    setTimeout(function(){ rpl.remove(); }, 750);
+  });
+
+  // Particle burst on click (visual only — game logic handled by original script)
+  btn.addEventListener('click', function() {
+    btn.classList.remove('sgb-popped');
+    void btn.offsetWidth;
+    btn.classList.add('sgb-popped');
+    setTimeout(function(){ btn.classList.remove('sgb-popped'); }, 700);
+  });
+
+  btn.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+})();
+</script>
+        </div>
+
+        <!-- GAME CONTENT -->
+        <div class="game-content" id="gameContent">
+            <header>
+                <div class="icon-btn home-icon" id="homeButton"><i class="fas fa-home"></i></div>
+                <h1 id="headerTitle">Tic Tac Toe</h1>
+                <div class="icon-btn" id="hamburgerIcon"><i class="fas fa-bars"></i></div>
+            </header>
+
+            <main style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <div class="score-board">
+                    <div class="score-item" id="scoreXContainer">
+                        <span class="name" id="displayXName">Player X</span>
+                        <span class="score" id="scoreX">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="name" data-translate="draws">Draws</span>
+                        <span class="score" id="scoreDraw">0</span>
+                    </div>
+                    <div class="score-item" id="scoreOContainer">
+                        <span class="name" id="displayOName">Player O</span>
+                        <span class="score" id="scoreO">0</span>
+                    </div>
+                </div>
+
+                <div class="status-display" id="statusDisplay"></div>
+                <div class="timer-text" id="timerText"><span data-translate="timeLeft">Time Left:</span> <span id="timeCount">10</span>s</div>
+                <div class="timer-display" id="timerDisplay"><div class="timer-bar" id="timerBar"></div></div>
+                
+                <div class="game-board-container">
+                    <div class="game-board" id="gameBoard"></div>
+                    <div class="winning-line" id="winningLine"></div>
+                </div>
+                
+                <div class="game-controls">
+                    <button class="neumorphic-button" id="resetButton" data-translate="resetGame">Reset Board</button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- WINNER MODAL -->
+    <div id="winnerModal" class="winner-modal">
+        <div class="winner-content">
+            <div class="winner-icon" id="winnerIcon">🏆</div>
+            <div class="winner-text" id="winnerText"></div>
+            <button class="neumorphic-button primary" id="playAgainBtn" data-translate="newGame">Play Again</button>
+            <button class="neumorphic-button" id="modalHomeBtn" style="margin-top: 10px;" data-translate="home">Home</button>
+        </div>
+    </div>
+
+    <!-- SIDE MENU -->
+    <nav class="side-menu" id="sideMenu">
+        <button class="close-menu-btn" id="closeMenuBtn"><i class="fas fa-times"></i></button>
+        <ul>
+            <li>
+                <span data-translate="language">Language</span>
+                <div class="toggle-switch">
+                    <button id="langEn" data-lang="en">EN</button>
+                    <button id="langHi" data-lang="hi">HI</button>
+                    <button id="langBn" data-lang="bn">BN</button>
+                </div>
+            </li>
+            <li>
+                <span data-translate="sound">Sound FX</span>
+                <div class="toggle-switch">
+                    <button id="soundOn">On</button>
+                    <button id="soundOff">Off</button>
+                </div>
+            </li>
+             <li>
+                <span data-translate="music">Music</span>
+                <div class="toggle-switch">
+                    <button id="musicOn">On</button>
+                    <button id="musicOff">Off</button>
+                </div>
+            </li>
+             <li>
+                <span data-translate="voice">Voice</span>
+                <div class="toggle-switch">
+                    <button id="voiceOn">On</button>
+                    <button id="voiceOff">Off</button>
+                </div>
+            </li>
+            <li>
+                <span style="font-weight:700;font-size:0.9em;">🎨 UI Theme</span>
+                <div class="toggle-switch" style="margin-top:8px;">
+                    <button id="themeDayBtn" class="active" >☀️ Day</button>
+                    <button id="themeNightBtn" >🌙 Night</button>
+                </div>
+            </li>
+            <li><hr style="border: 1px solid var(--shadow-dark); margin: 15px 0; opacity: 0.5;"></li>
+            <li>
+                <button class="neumorphic-button" id="resetScoresButton" style="width:100%;" data-translate="resetScores">Reset Stats</button>
+            </li>
+        </ul>
+    </nav>
+    <div class="overlay" id="overlay"></div>
+
+    <script>
+        const translations = {
+            en: {
+                title: "Tic Tac Toe Pro", setupGame: "Setup Your Game", p1Name: "Player X Name", p2Name: "Player O Name",
+                skin: "Board Theme", season: "Environment", gameMode: "Game Mode", gameType: "Game Type",
+                normal: "Normal", timed: "Timed", timePerTurn: "Time Per Turn", pvp: "Player vs Player", pve: "Player vs AI",
+                aiDifficulty: "AI Level", startGame: "Start Game", draws: "Draws", timeLeft: "Time Left:",
+                resetGame: "Reset Board", newGame: "Play Again", home: "Home", language: "Language",
+                sound: "Sound", music: "Music", voice: "Voice", resetScores: "Reset Scores",
+                aiThinking: "AI is thinking...", wins: " Wins!", draw: "It's a Draw!", timeUp: "Time's Up!"
+            },
+            hi: {
+                title: "टिक टैक टो प्रो", setupGame: "गेम सेटअप", p1Name: "खिलाड़ी X का नाम", p2Name: "खिलाड़ी O का नाम",
+                skin: "थीम चुनें", season: "मौसम", gameMode: "मोड", gameType: "प्रकार",
+                normal: "सामान्य", timed: "समयबद्ध", timePerTurn: "समय", pvp: "बनाम खिलाड़ी", pve: "बनाम AI",
+                aiDifficulty: "AI स्तर", startGame: "शुरू करें", draws: "ड्रॉ", timeLeft: "समय:",
+                resetGame: "रीसेट", newGame: "पुनः खेलें", home: "होम", language: "भाषा",
+                sound: "ध्वनि", music: "संगीत", voice: "आवाज़", resetScores: "स्कोर हटाएं",
+                aiThinking: "AI सोच रहा है...", wins: " जीत गया!", draw: "ड्रॉ हो गया!", timeUp: "समय समाप्त!"
+            },
+            bn: {
+                title: "টিক ট্যাক টো প্রো", setupGame: "গেম সেটআপ", p1Name: "খেলোয়াড় X এর নাম", p2Name: "খেলোয়াড় O এর নাম",
+                skin: "থিম", season: "পরিবেশ", gameMode: "মোড", gameType: "ধরণ",
+                normal: "সাধারণ", timed: "টাইমড", timePerTurn: "সময়", pvp: "বনাম প্লেয়ার", pve: "বনাম AI",
+                aiDifficulty: "AI লেভেল", startGame: "শুরু করুন", draws: "ড্র", timeLeft: "সময় বাকি:",
+                resetGame: "রিসেট", newGame: "আবার খেলুন", home: "হোম", language: "भाषा",
+                sound: "সাউন্ড", music: "মিউজিক", voice: "ভয়েস", resetScores: "স্কোর মুছুন",
+                aiThinking: "AI ভাবছে...", wins: " জিতেছে!", draw: "ড্র হয়েছে!", timeUp: "সময় শেষ!"
+            }
+        };
+
+        const skins = {
+            classic: { x: 'X', o: 'O', class: '' },
+            emoji: { x: '😜', o: '😈', class: 'skin-text' },
+            love: { x: '❤️', o: '💙', class: 'skin-text' },
+            neon: { x: 'X', o: 'O', class: 'skin-neon' }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let gameActive = true;
+            let boardState = Array(9).fill("");
+            let currentPlayer = "X";
+            let gameMode = 'pvp'; 
+            let gameType = 'normal'; 
+            let turnTimeLimit = 10;
+            let timerInterval, timeLeft, musicInterval;
+            let aiDifficulty = 'hard';
+            let scores = JSON.parse(localStorage.getItem('ttt_scores')) || { X: 0, O: 0, Draw: 0 };
+            let currentLang = 'en';
+            let soundEnabled = true, musicEnabled = true, voiceEnabled = true;
+            let humanPlayer = 'X', aiPlayer = 'O';
+            let p1Name = "Player X", p2Name = "Player O";
+            let currentSkin = 'classic';
+            let currentSeason = 'snow';
+
+            let audioCtx = null;
+            let bgMusic = new Audio('bg_music.mp3');
+            bgMusic.loop = true;
+            bgMusic.volume = 0.4;
+            function initAudio() {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }
+
+            function playMusic() {
+                if (!musicEnabled) {
+                    stopMusic();
+                    return;
+                }
+                bgMusic.play().catch(() => {});
+            }
+            function stopMusic() {
+                bgMusic.pause();
+            }
+
+            let weatherInterval;
+            function setWeather(type) {
+                if (weatherInterval) clearInterval(weatherInterval);
+                document.querySelectorAll('.weather-particle').forEach(p => p.remove());
+                document.body.classList.remove('space-mode');
+                // Always block weather in Night/Fantasy mode
+                if (type === 'none' || document.body.classList.contains('fantasy-mode')) return;
+
+                if (type === 'snow') {
+                    weatherInterval = setInterval(() => createParticle('snowflake'), 400); 
+                } else if (type === 'rain') {
+                    weatherInterval = setInterval(() => createParticle('raindrop'), 50); 
+                } else if (type === 'space') {
+                    document.body.classList.add('space-mode');
+                    for(let i=0; i<50; i++) createParticle('star', true); 
+                }
+            }
+
+            function createParticle(type, isStatic = false) {
+                const p = document.createElement('div');
+                p.classList.add('weather-particle', type);
+                p.style.left = Math.random() * 100 + 'vw';
+                
+                if (type === 'snowflake') {
+                    const size = Math.random() * 10 + 4 + 'px';
+                    p.style.width = size; p.style.height = size; p.style.opacity = Math.random() * 0.5 + 0.3;
+                    const fall = Math.random() * 7 + 5 + 's';
+                    const sway = Math.random() * 2 + 2 + 's';
+                    p.style.animationDuration = `${fall}, ${sway}`;
+                    setTimeout(() => p.remove(), parseFloat(fall) * 1000);
+                } else if (type === 'raindrop') {
+                     p.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                     setTimeout(() => p.remove(), 1000);
+                } else if (type === 'star') {
+                    const size = Math.random() * 3 + 1 + 'px';
+                    p.style.width = size; p.style.height = size;
+                    p.style.top = Math.random() * 100 + 'vh';
+                    p.style.animationDuration = (Math.random() * 3 + 1) + 's';
+                    return document.body.appendChild(p);
+                }
+                document.body.appendChild(p);
+            }
+
+            document.getElementById('startGameButton').addEventListener('click', () => {
+                initAudio();
+                playSound('back');
+                if (musicEnabled) playMusic();
+
+                p1Name = document.getElementById('playerXName').value || "Player X";
+                p2Name = document.getElementById('playerOName').value || (document.getElementById('gameModeSelect').value === 'pve' ? "AI Bot" : "Player O");
+                currentSkin = document.getElementById('skinSelect').value;
+                currentSeason = document.getElementById('seasonSelect').value;
+                gameMode = document.getElementById('gameModeSelect').value;
+                gameType = document.getElementById('gameTypeSelect').value;
+                turnTimeLimit = parseInt(document.getElementById('timeLimitSelect').value);
+                aiDifficulty = document.getElementById('aiDifficultySelect').value;
+
+                // Stop music when entering game
+            stopMusic();
+            document.getElementById('gameSetupScreen').style.display = 'none';
+                document.getElementById('gameContent').style.display = 'flex';
+                document.getElementById('displayXName').textContent = p1Name;
+                document.getElementById('displayOName').textContent = p2Name;
+                document.getElementById('timerDisplay').style.display = gameType === 'timed' ? 'block' : 'none';
+                document.getElementById('timerText').style.display = gameType === 'timed' ? 'block' : 'none';
+
+                if(!document.body.classList.contains('fantasy-mode')) setWeather(currentSeason); else setWeather('none');
+                startNewGame();
+            });
+
+            function startNewGame() {
+                boardState.fill("");
+                gameActive = true;
+                currentPlayer = "X";
+                createBoard();
+                document.getElementById('winningLine').style.display = 'none';
+                document.getElementById('winnerModal').classList.remove('show');
+                updateStatus();
+                updateScores();
+                if (gameType === 'timed') startTimer();
+                if (gameMode === 'pve') { humanPlayer = 'X'; aiPlayer = 'O'; }
+            }
+
+            function createBoard() {
+                const board = document.getElementById('gameBoard');
+                board.innerHTML = '';
+                boardState.forEach((_, i) => {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.index = i;
+                    cell.addEventListener('click', handleCellClick);
+                    board.appendChild(cell);
+                });
+            }
+
+            function handleCellClick(e) {
+                const idx = e.target.dataset.index;
+                if (boardState[idx] !== "" || !gameActive) return;
+                if (gameMode === 'pve' && currentPlayer === aiPlayer) return;
+                makeMove(idx, currentPlayer);
+            }
+
+            function makeMove(index, player) {
+                boardState[index] = player;
+                const cell = document.getElementById('gameBoard').children[index];
+                
+                const skinData = skins[currentSkin];
+                cell.textContent = player === 'X' ? skinData.x : skinData.o;
+                cell.classList.add(player.toLowerCase());
+                if (skinData.class) cell.classList.add(skinData.class);
+
+                playSound('click');
+
+                if (checkWin(player)) {
+                    endGame(player);
+                } else if (!boardState.includes("")) {
+                    endGame('Draw');
+                } else {
+                    currentPlayer = currentPlayer === "X" ? "O" : "X";
+                    updateStatus();
+                    if (gameType === 'timed') startTimer();
+                    if (gameMode === 'pve' && currentPlayer === aiPlayer && gameActive) {
+                        updateStatus(true);
+                        setTimeout(aiMove, 600);
+                    }
+                }
+            }
+
+            function updateStatus(thinking = false) {
+                const status = document.getElementById('statusDisplay');
+                if (thinking) {
+                    status.innerHTML = `${translations[currentLang].aiThinking} <i class="fas fa-spinner fa-spin"></i>`;
+                } else {
+                    const name = currentPlayer === 'X' ? p1Name : p2Name;
+                    const color = currentPlayer === 'X' ? 'var(--primary-accent-color-x)' : 'var(--secondary-accent-color-o)';
+                    status.innerHTML = `<span style="color:${color}">${name}</span>'s Turn`;
+                }
+            }
+
+            function endGame(winner) {
+                gameActive = false;
+                clearInterval(timerInterval);
+                let msg = "";
+
+                // Determine message
+                if (winner === 'Draw') {
+                    scores.Draw++;
+                    msg = translations[currentLang].draw;
+                } else {
+                    scores[winner]++;
+                    const winnerName = winner === 'X' ? p1Name : p2Name;
+                    msg = winnerName + translations[currentLang].wins;
+                }
+
+                if(voiceEnabled) speak(msg);
+
+                // Sounds & Effects
+                if (winner === 'Draw') {
+                    playSound('draw');
+                } else {
+                    playSound(winner === aiPlayer && gameMode === 'pve' ? 'lose' : 'win');
+                    if (gameMode !== 'pve' || winner !== aiPlayer) triggerFireworks();
+                }
+                
+                localStorage.setItem('ttt_scores', JSON.stringify(scores));
+                updateScores();
+                setTimeout(function(){ showWinnerModal(msg, winner); }, 1200);
+            }
+
+            function triggerFireworks() {
+                for(let i=0; i<15; i++) {
+                    setTimeout(() => {
+                        const fw = document.createElement('div');
+                        fw.classList.add('firework');
+                        fw.style.left = (Math.random() * 80 + 10) + '%';
+                        fw.style.top = (Math.random() * 60 + 20) + '%';
+                        fw.style.backgroundColor = `hsl(${Math.random()*360}, 100%, 50%)`;
+                        fw.style.setProperty('--x', (Math.random()*200 - 100) + 'px');
+                        fw.style.setProperty('--y', (Math.random()*200 - 100) + 'px');
+                        document.body.appendChild(fw);
+                        setTimeout(() => fw.remove(), 1000);
+                    }, i * 100);
+                }
+            }
+
+            function speak(text) {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); 
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 1.1; 
+                    utterance.pitch = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                }
+            }
+
+            function aiMove() {
+                if (!gameActive) return;
+                let idx;
+                
+                if (aiDifficulty === 'easy') {
+                    idx = getRandomMove();
+                } 
+                else if (aiDifficulty === 'medium') {
+                    idx = Math.random() < 0.4 ? getRandomMove() : getBestMove();
+                } 
+                else if (aiDifficulty === 'hard') {
+                     idx = Math.random() < 0.1 ? getRandomMove() : getBestMove();
+                }
+                else {
+                    idx = getBestMove();
+                }
+
+                if (idx !== -1) makeMove(idx, aiPlayer);
+            }
+
+            function getRandomMove() {
+                let avail = boardState.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+                return avail[Math.floor(Math.random() * avail.length)];
+            }
+            function getBestMove() {
+                return minimax(boardState, aiPlayer).index;
+            }
+            function minimax(newBoard, player) {
+                let avail = newBoard.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+                if (checkWinState(newBoard, humanPlayer)) return { score: -10 };
+                if (checkWinState(newBoard, aiPlayer)) return { score: 10 };
+                if (avail.length === 0) return { score: 0 };
+                let moves = [];
+                for (let i of avail) {
+                    let move = {}; move.index = i; newBoard[i] = player;
+                    move.score = minimax(newBoard, player === aiPlayer ? humanPlayer : aiPlayer).score;
+                    newBoard[i] = ""; moves.push(move);
+                }
+                return moves.reduce((best, m) => (player === aiPlayer ? (m.score > best.score ? m : best) : (m.score < best.score ? m : best)));
+            }
+            function checkWinState(b, p) {
+                const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                return wins.some(c => b[c[0]] === p && b[c[1]] === p && b[c[2]] === p);
+            }
+            function checkWin(p) {
+                const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+                return wins.some(c => {
+                    if (c.every(i => boardState[i] === p)) {
+                        drawWinLine(c); return true;
+                    } return false;
+                });
+            }
+            function drawWinLine(combo) {
+                const line = document.getElementById('winningLine');
+                const cells = document.getElementById('gameBoard').children;
+                const container = document.querySelector('.game-board-container');
+                const r1 = cells[combo[0]].getBoundingClientRect();
+                const r2 = cells[combo[2]].getBoundingClientRect();
+                const cr = container.getBoundingClientRect();
+                const x1 = r1.left + r1.width/2 - cr.left;
+                const y1 = r1.top  + r1.height/2 - cr.top;
+                const x2 = r2.left + r2.width/2 - cr.left;
+                const y2 = r2.top  + r2.height/2 - cr.top;
+                const len = Math.hypot(x2-x1, y2-y1);
+                const ang = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI;
+                line.style.width = len + 'px';
+                line.style.left  = '0';
+                line.style.top   = '0';
+                line.style.transform = `translate(${x1}px, ${y1}px) rotate(${ang}deg) translateY(-50%)`;
+                line.style.display = 'block';
+                // Laser sweep animation
+                line.style.clipPath = 'inset(0 100% 0 0)';
+                line.style.transition = 'none';
+                requestAnimationFrame(function(){
+                    requestAnimationFrame(function(){
+                        line.style.transition = 'clip-path 0.38s cubic-bezier(0.4,0,0.2,1)';
+                        line.style.clipPath = 'inset(0 0% 0 0)';
+                    });
+                });
+                // Spark particles along beam
+                setTimeout(function(){
+                    for(var pi=0; pi<16; pi++){
+                        (function(idx){
+                            setTimeout(function(){
+                                var prog = idx/15;
+                                var dot = document.createElement('div');
+                                var dotX = x1 + (x2-x1)*prog;
+                                var dotY = y1 + (y2-y1)*prog;
+                                dot.style.cssText = 'position:absolute;width:7px;height:7px;border-radius:50%;'
+                                    +'background:#00eeff;'
+                                    +'box-shadow:0 0 8px 3px #00eeff,0 0 18px 6px rgba(0,220,255,0.65);'
+                                    +'z-index:500;pointer-events:none;transform-origin:center;'
+                                    +'left:'+(dotX-3.5)+'px;'
+                                    +'top:'+(dotY-3.5)+'px;'
+                                    +'animation:laserDot 0.5s ease-out forwards;';
+                                container.appendChild(dot);
+                                setTimeout(function(){ dot.remove(); }, 520);
+                            }, idx * 24);
+                        })(pi);
+                    }
+                }, 60);
+            }
+
+            function startTimer() {
+                clearInterval(timerInterval);
+                timeLeft = turnTimeLimit;
+                updateTimerUI();
+                timerInterval = setInterval(() => {
+                    timeLeft--; updateTimerUI();
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        const winner = currentPlayer==='X'?'O':'X';
+                        const winnerName = winner === 'X' ? p1Name : p2Name;
+                        if(gameMode === 'pve' && currentPlayer === humanPlayer) playSound('lose'); else playSound('win');
+                        scores[winner]++; updateScores();
+                        
+                        const msg = translations[currentLang].timeUp;
+                        if(voiceEnabled) speak(msg);
+                        
+                        showWinnerModal(msg, winner);
+                    }
+                }, 1000);
+            }
+            function updateTimerUI() {
+                document.getElementById('timeCount').textContent = timeLeft;
+                document.getElementById('timerBar').style.width = (timeLeft/turnTimeLimit)*100+'%';
+            }
+
+            function updateScores() {
+                document.getElementById('scoreX').textContent = scores.X;
+                document.getElementById('scoreO').textContent = scores.O;
+                document.getElementById('scoreDraw').textContent = scores.Draw;
+            }
+            function showWinnerModal(text, winner) {
+                document.getElementById('winnerModal').classList.add('show');
+                document.getElementById('winnerText').textContent = text;
+                document.getElementById('winnerIcon').textContent = winner === 'Draw' ? '🤝' : (currentSkin === 'emoji' ? (winner === 'X' ? '😜' : '😈') : '🏆');
+            }
+            function goHome() {
+                stopMusic();
+                if(!document.body.classList.contains('fantasy-mode')) setWeather('snow');
+                document.getElementById('gameContent').style.display = 'none';
+                document.getElementById('gameSetupScreen').style.display = 'flex';
+                document.getElementById('sideMenu').classList.remove('open');
+                document.getElementById('overlay').classList.remove('active');
+            // Restart music when returning to home
+            if (musicEnabled) playMusic();
+            }
+
+            function playSound(type) {
+                if (!soundEnabled || !audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+                if (type==='click') {
+                    osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(100, now+0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.1);
+                    osc.start(now); osc.stop(now+0.1);
+                } else if (type==='win') {
+                    osc.type='triangle'; osc.frequency.setValueAtTime(523, now); osc.frequency.setValueAtTime(659, now+0.15); osc.frequency.setValueAtTime(783, now+0.3);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now+1);
+                    osc.start(now); osc.stop(now+1);
+                } else if (type==='lose') {
+                    osc.type='sawtooth'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(200, now+0.5);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.5);
+                    osc.start(now); osc.stop(now+0.5);
+                } else if (type==='draw') {
+                     osc.type='square'; osc.frequency.setValueAtTime(300, now); gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now+0.3);
+                     osc.start(now); osc.stop(now+0.3);
+                } else if (type==='back') {
+                     osc.frequency.setValueAtTime(200, now); osc.frequency.linearRampToValueAtTime(50, now+0.2);
+                     gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now+0.2);
+                     osc.start(now); osc.stop(now+0.2);
+                }
+            }
+
+            document.getElementById('resetButton').addEventListener('click', () => { playSound('back'); startNewGame(); });
+            document.getElementById('playAgainBtn').addEventListener('click', () => { playSound('click'); startNewGame(); });
+            document.getElementById('homeButton').addEventListener('click', goHome);
+            document.getElementById('modalHomeBtn').addEventListener('click', () => { document.getElementById('winnerModal').classList.remove('show'); goHome(); });
+            
+            document.getElementById('hamburgerIcon').addEventListener('click', () => { document.getElementById('sideMenu').classList.add('open'); document.getElementById('overlay').classList.add('active'); });
+            document.getElementById('closeMenuBtn').addEventListener('click', () => { document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); });
+            document.getElementById('overlay').addEventListener('click', () => { document.getElementById('sideMenu').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); });
+
+            const setLang = (l) => {
+                currentLang = l;
+                document.querySelectorAll('[data-translate]').forEach(el => el.textContent = translations[l][el.dataset.translate] || el.dataset.translate);
+                ['En','Hi','Bn'].forEach(lang => document.getElementById('lang'+lang).classList.toggle('active', l===lang.toLowerCase()));
+            };
+            document.getElementById('langEn').addEventListener('click', () => setLang('en'));
+            document.getElementById('langHi').addEventListener('click', () => setLang('hi'));
+            document.getElementById('langBn').addEventListener('click', () => setLang('bn'));
+            
+            const updateToggle = (id, state) => {
+                document.getElementById(id+'On').classList.toggle('active', state);
+                document.getElementById(id+'Off').classList.toggle('active', !state);
+            };
+            document.getElementById('soundOn').addEventListener('click', () => { soundEnabled=true; updateToggle('sound', true); });
+            document.getElementById('soundOff').addEventListener('click', () => { soundEnabled=false; updateToggle('sound', false); });
+            
+            document.getElementById('musicOn').addEventListener('click', () => { musicEnabled=true; updateToggle('music', true); if(gameActive && document.getElementById('gameContent').style.display==='flex') playMusic(); });
+            document.getElementById('musicOff').addEventListener('click', () => { musicEnabled=false; updateToggle('music', false); stopMusic(); });
+
+            document.getElementById('voiceOn').addEventListener('click', () => { voiceEnabled=true; updateToggle('voice', true); });
+            document.getElementById('voiceOff').addEventListener('click', () => { voiceEnabled=false; updateToggle('voice', false); });
+
+            document.getElementById('resetScoresButton').addEventListener('click', () => {
+                scores = { X: 0, O: 0, Draw: 0 }; localStorage.setItem('ttt_scores', JSON.stringify(scores)); updateScores(); playSound('back');
+            });
+            
+            // --- FIX FOR AI VISIBILITY BUG ---
+            const aiContainer = document.getElementById('aiDifficultyContainer');
+            const modeSelect = document.getElementById('gameModeSelect');
+
+            function toggleAI() {
+                aiContainer.style.display = modeSelect.value === 'pve' ? 'block' : 'none';
+            }
+
+            // Call immediately on load to handle browser autofill
+            toggleAI();
+
+            // Also attach listener for changes
+            modeSelect.addEventListener('change', toggleAI);
+            // ------------------------------------
+
+            setLang('en');
+            updateToggle('sound', true); updateToggle('music', true); updateToggle('voice', true);
+            updateScores();
+            setWeather('snow'); 
+        });
+    
+        // Auto-play music on home screen after first user interaction
+        document.body.addEventListener('click', function startMusic() {
+            if (musicEnabled && document.getElementById('gameSetupScreen').style.display !== 'none') {
+                playMusic();
+            }
+            document.body.removeEventListener('click', startMusic);
+        }, { once: true });
+        </script>
+
+<script>
+/* ════ FANTASY AURORA ENGINE ════ */
+(function(){
+    var canvas = document.getElementById('auroraCanvas');
+    var ctx = canvas.getContext('2d');
+    var W, H;
+    function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+
+    var bands = [
+        { y:.22, c1:'#001a44', c2:'#00ffcc', c3:'#6600cc', sp:.00038, amp:.085, fr:1.2 },
+        { y:.33, c1:'#000e30', c2:'#00ccff', c3:'#9900ee', sp:.00055, amp:.060, fr:.85 },
+        { y:.44, c1:'#000022', c2:'#22ffee', c3:'#cc00ff', sp:.00028, amp:.100, fr:1.55},
+        { y:.18, c1:'#001838', c2:'#0088ff', c3:'#4400bb', sp:.00046, amp:.048, fr:.68 },
+    ];
+
+    var stars = [];
+    for(var i=0;i<140;i++) stars.push({
+        x:Math.random(), y:Math.random()*.65,
+        r:Math.random()*1.6+.25,
+        a:Math.random()*.7+.25,
+        da:(Math.random()-.5)*.014
+    });
+
+    var t = 0;
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        // Deep space BG
+        var bg = ctx.createLinearGradient(0,0,0,H);
+        bg.addColorStop(0,'#010818'); bg.addColorStop(.5,'#020d2e'); bg.addColorStop(1,'#010413');
+        ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+        // Stars
+        for(var si=0;si<stars.length;si++){
+            var s=stars[si]; s.a+=s.da;
+            if(s.a<=.1||s.a>=.98) s.da*=-1;
+            ctx.save(); ctx.globalAlpha=s.a;
+            ctx.fillStyle='#fff'; ctx.shadowColor='#fff'; ctx.shadowBlur=5;
+            ctx.beginPath(); ctx.arc(s.x*W, s.y*H, s.r, 0, 6.2832); ctx.fill();
+            ctx.restore();
+        }
+
+        // Aurora bands
+        for(var bi=0;bi<bands.length;bi++){
+            var b=bands[bi]; var pts=90;
+            var phase = t * b.sp * 1000;
+            ctx.save();
+            ctx.globalAlpha = .28 + Math.sin(t*.001+bi)*.09;
+            var grad = ctx.createLinearGradient(0,0,W,0);
+            grad.addColorStop(0,   b.c1+'00');
+            grad.addColorStop(.12, b.c2+'99');
+            grad.addColorStop(.38, b.c3+'dd');
+            grad.addColorStop(.62, b.c2+'cc');
+            grad.addColorStop(.88, b.c3+'99');
+            grad.addColorStop(1,   b.c1+'00');
+
+            ctx.beginPath();
+            for(var p=0;p<=pts;p++){
+                var x=(p/pts)*W;
+                var w= Math.sin(p/pts*Math.PI*2*b.fr + phase + bi*1.4)
+                      *Math.sin(p/pts*Math.PI*b.fr*.55 + phase*.65)
+                      *b.amp*H;
+                var y=b.y*H+w;
+                if(p===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            var bandH = H*(.16 + Math.sin(t*.0006+bi)*.04);
+            for(var p2=pts;p2>=0;p2--){
+                var x2=(p2/pts)*W;
+                var w2=Math.sin(p2/pts*Math.PI*2*b.fr+phase+bi*1.4)
+                       *Math.sin(p2/pts*Math.PI*b.fr*.55+phase*.65)
+                       *b.amp*H;
+                ctx.lineTo(x2, b.y*H+w2+bandH);
+            }
+            ctx.closePath();
+            ctx.fillStyle=grad;
+            ctx.filter='blur(20px)';
+            ctx.fill(); ctx.filter='none'; ctx.restore();
+        }
+
+        // Purple & blue nebula glow
+        var n1=ctx.createRadialGradient(W*.72,H*.22,0,W*.72,H*.22,W*.52);
+        n1.addColorStop(0,'rgba(110,0,200,.13)'); n1.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=n1; ctx.fillRect(0,0,W,H);
+        var n2=ctx.createRadialGradient(W*.18,H*.38,0,W*.18,H*.38,W*.42);
+        n2.addColorStop(0,'rgba(0,80,200,.11)'); n2.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=n2; ctx.fillRect(0,0,W,H);
+
+        t+=16; requestAnimationFrame(draw);
+    }
+    draw();
+
+    // Ambient floating particles
+    var COLORS=['#ffe840','#00eeff','#ffffff','#cc60ff','#44ffcc','#ff9030'];
+    function spawnParticle(){
+        if(!document.body.classList.contains('fantasy-mode')) return;
+        var p=document.createElement('div');
+        p.className='aurora-particle';
+        var sz=Math.random()*4+1.5;
+        var col=COLORS[Math.floor(Math.random()*COLORS.length)];
+        p.style.cssText='width:'+sz+'px;height:'+sz+'px;'
+            +'left:'+(Math.random()*100)+'vw;bottom:-12px;'
+            +'background:'+col+';'
+            +'box-shadow:0 0 '+(sz*3)+'px '+sz+'px '+col+';'
+            +'animation-duration:'+(Math.random()*9+6)+'s;'
+            +'animation-delay:'+(Math.random()*3)+'s;'
+            +'opacity:'+(Math.random()*.55+.25)+';';
+        document.body.appendChild(p);
+        setTimeout(function(){p.remove();},15000);
+    }
+    setInterval(spawnParticle,700);
+    for(var pi=0;pi<14;pi++) setTimeout(spawnParticle,pi*350);
+})();
+
+/* ════ DAY / NIGHT TOGGLE ════ */
+window.applyUITheme = function(theme) {
+    var allDayBtns   = ['themeDayBtn','setupDayBtn'].map(function(id){ return document.getElementById(id); });
+    var allNightBtns = ['themeNightBtn','setupNightBtn'].map(function(id){ return document.getElementById(id); });
+
+    if(theme === 'night'){
+        document.body.classList.add('fantasy-mode');
+        localStorage.setItem('uiTheme','night');
+        allDayBtns.forEach(function(b){   if(b){ b.classList.remove('active'); }});
+        allNightBtns.forEach(function(b){ if(b){ b.classList.add('active'); }});
+        // Stop all weather particles immediately
+        document.querySelectorAll('.weather-particle').forEach(function(p){ p.remove(); });
+        if(typeof weatherInterval !== 'undefined' && weatherInterval) clearInterval(weatherInterval);
+    } else {
+        document.body.classList.remove('fantasy-mode');
+        localStorage.setItem('uiTheme','day');
+        allDayBtns.forEach(function(b){   if(b){ b.classList.add('active'); }});
+        allNightBtns.forEach(function(b){ if(b){ b.classList.remove('active'); }});
+        // Restore snow only on home screen
+        if(typeof setWeather === 'function'){
+            var homeScreen = document.getElementById('gameSetupScreen');
+            if(homeScreen && homeScreen.style.display !== 'none'){
+                setWeather('snow');
+            }
+        }
+    }
+};
+
+(function(){
+    var saved = localStorage.getItem('uiTheme') || 'day';
+
+    // Apply on page load immediately (before DOM ready for class)
+    if(saved === 'night'){
+        document.body.classList.add('fantasy-mode');
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        window.applyUITheme(saved);
+
+        // Wire up ALL theme buttons
+        ['themeDayBtn','setupDayBtn'].forEach(function(id){
+            var btn = document.getElementById(id);
+            if(btn) btn.addEventListener('click', function(){ window.applyUITheme('day'); });
+        });
+        ['themeNightBtn','setupNightBtn'].forEach(function(id){
+            var btn = document.getElementById(id);
+            if(btn) btn.addEventListener('click', function(){ window.applyUITheme('night'); });
+        });
+    });
+})();
+</script>
+
+</body>
+</html>
